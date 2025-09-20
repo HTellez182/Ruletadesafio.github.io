@@ -1,0 +1,2772 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aventura de Bolsillo: Alola</title>
+    <script src="https://cdn.tailwindcss.com">
+// ==================== EVENTO FOTO PERFIL ====================
+document.getElementById('inputFotoPerfil').addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        if (!usuarioActivo) return;
+        usuarioActivo.fotoPerfil = e.target.result;
+        localStorage.setItem('usuarios', JSON.stringify(usuarios));
+        document.getElementById('fotoPerfilImg').src = usuarioActivo.fotoPerfil;
+        document.getElementById('fotoPerfilImg').classList.remove('hidden');
+        document.getElementById('iconoPerfilDefault').classList.add('hidden');
+    };
+    reader.readAsDataURL(file);
+});
+
+</script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+        body { font-family: 'Roboto', sans-serif; }
+        
+        .anim-usar {
+            animation: usarAnim 0.6s forwards;
+        }
+        
+        @keyframes usarAnim {
+            0% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.3) rotate(20deg);
+                opacity: 0.8;
+            }
+            100% {
+                transform: scale(0) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        .star-anim {
+            animation: star-fall 1.5s ease-out forwards;
+            position: absolute;
+            font-size: 2rem;
+            opacity: 0;
+        }
+        
+        @keyframes star-fall {
+            0% {
+                transform: translateY(-20px) scale(0.5);
+                opacity: 0;
+            }
+            25% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                transform: translateY(100px) scale(0);
+                opacity: 0;
+            }
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #mensaje-flotante {
+            background: #fff !important;
+            color: #222 !important;
+            min-width: 180px;
+            max-width: 260px;
+            font-size: 1rem;
+            padding: 0.75rem 1.25rem !important;
+            border-radius: 0.75rem !important;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+            border: 1.5px solid #e5e7eb;
+        }
+
+        @keyframes popscale {
+            0% { transform: scale(0.2); opacity:0; }
+            60% { transform: scale(1.15); opacity:1; }
+            80% { transform: scale(0.95);}
+            100% { transform: scale(1);}
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-400 to-indigo-600 text-gray-900 min-h-screen p-8 flex items-center justify-center transition-all duration-500">
+
+<div id="app-container" class="w-full max-w-5xl">
+    <div id="auth" class="bg-white/80 backdrop-blur-sm p-8 rounded-3xl shadow-2xl w-full max-w-sm mx-auto border-4 border-white transform transition-transform duration-300 hover:scale-105">
+        <div class="flex justify-center mb-6">
+            <i class="fas fa-user-circle text-orange-500 text-6xl"></i>
+        </div>
+        <h2 class="text-4xl font-bold text-center mb-2 text-orange-600">Alola Entrenadores</h2>
+        <p class="text-center text-gray-600 mb-6">¡Inicia sesión para comenzar tu aventura en Alola!</p>
+        <div id="error-message" class="text-red-500 text-center mb-4 hidden"></div>
+        <form id="loginForm">
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2" for="usuario">Usuario</label>
+                <input type="text" id="usuario" class="w-full bg-white/70 text-gray-900 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 border-2 border-orange-200" placeholder="Entrenador">
+            </div>
+            <div class="mb-6">
+                <label class="block text-gray-700 mb-2" for="password">Contraseña</label>
+                <input type="password" id="password" class="w-full bg-white/70 text-gray-900 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 border-2 border-orange-200" placeholder="Contraseña">
+            </div>
+            <button type="submit" class="w-full bg-orange-500 text-white font-bold p-3 rounded-xl hover:bg-orange-600 transition-colors transform hover:scale-105 shadow-md border-2 border-orange-700">Ingresar</button>
+        </form>
+        <button onclick="borrarStorage()" class="w-full mt-4 bg-gray-300 text-gray-700 font-bold p-2 rounded-xl hover:bg-gray-400 transition-colors border-2 border-gray-400">Limpiar datos y restaurar usuarios</button>
+    </div>
+    <div id="panels-container" class="hidden">
+        <div id="perfil" class="bg-gradient-to-br from-white via-indigo-100 to-indigo-300 backdrop-blur-sm p-8 rounded-3xl shadow-2xl border-4 border-white">
+            <header class="flex flex-col gap-4 pb-6 mb-6 border-b-2 border-indigo-300">
+                <div class="flex flex-col sm:flex-row items-center gap-6">
+                    <div class="flex flex-col items-center">
+                        <div id="fotoPerfilContainer" class="flex items-center justify-center w-44 h-44 rounded-full bg-gradient-to-br from-yellow-300 via-orange-400 to-pink-500 shadow-2xl border-4 border-white overflow-hidden mb-2 transition-all duration-300 ring-4 ring-pink-200 hover:ring-yellow-400 hover:scale-105 profile-foto-anim">
+                            <img id="fotoPerfilImg" src="" alt="Foto de perfil" class="w-full h-full object-cover hidden" style="min-width: 160px; min-height: 160px; filter: drop-shadow(0 0 24px #fbbf24cc);">
+                            <i id="iconoPerfilDefault" class="fas fa-user-astronaut text-white text-7xl drop-shadow-lg"></i>
+                        </div>
+                        <label for="inputFotoPerfil" class="block w-full">
+                            <span class="w-full bg-orange-500 text-white font-bold py-2 px-4 rounded-full cursor-pointer hover:bg-orange-600 transition-colors text-center block">Agregar/editar foto</span>
+                            <input type="file" id="inputFotoPerfil" accept="image/*" class="hidden" />
+                        </label>
+                        <span class="text-xs text-gray-500 mt-1">Agregar/editar foto</span>
+                    </div>
+                    <div class="flex-1">
+                        <h2 class="text-4xl font-extrabold text-indigo-700">¡Hola, <span id="nombreUsuario"></span>!</h2>
+                        <div class="flex space-x-3 mt-2">
+                            <span class="flex items-center font-bold text-teal-700 bg-teal-100 px-3 py-1 rounded-xl shadow-inner border-2 border-teal-300">
+                                <i class="fas fa-coins mr-2 text-teal-500"></i>
+                                <span id="saldo"></span>
+                            </span>
+                                                        <span class="flex items-center font-bold text-yellow-800 bg-gradient-to-r from-yellow-200 via-yellow-100 to-pink-100 px-4 py-2 rounded-2xl shadow-lg border-2 border-yellow-400 animate-pulse">
+                                                                <span class="inline-block mr-2" style="position:relative;">
+                                                                    <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                        <circle cx="16" cy="16" r="14" fill="#FDE68A" stroke="#F59E42" stroke-width="3"/>
+                                                                        <circle cx="16" cy="16" r="8" fill="#FBBF24" stroke="#F59E42" stroke-width="2"/>
+                                                                        <text x="16" y="21" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff" font-family="Arial">R</text>
+                                                                    </svg>
+                                                                    <span class="absolute top-0 left-0 w-full h-full animate-ping rounded-full bg-yellow-300 opacity-20"></span>
+                                                                </span>
+                                                                <span id="monedasRuleta" class="text-lg font-extrabold drop-shadow"></span>
+                                                        </span>
+                        </div>
+                        <div id="contenedorMedallasPerfil" class="mt-4"></div>
+                        <!-- Contenedor para mostrar el equipo Pokémon del usuario en su perfil -->
+                        <div id="equipoUsuarioPerfil" class="mt-4"></div>
+                    </div>
+                </div>
+                <nav class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mt-4">
+                    <button onclick="abrirModalLideresGym()" class="flex items-center justify-center px-4 py-3 bg-gradient-to-br from-pink-500 to-pink-400 rounded-xl text-white hover:scale-105 hover:from-pink-600 hover:to-pink-400 transition-all shadow-lg border-2 border-pink-700 font-semibold">
+                        <i class="fas fa-crown mr-2"></i> Líderes
+                    </button>
+                    <button onclick="mostrarTienda()" class="flex items-center justify-center px-4 py-3 bg-gradient-to-br from-red-500 to-orange-400 rounded-xl text-white hover:scale-105 hover:from-orange-500 hover:to-red-400 transition-all shadow-lg border-2 border-red-700 font-semibold">
+                        <i class="fas fa-store mr-2"></i> Tienda
+                    </button>
+                    <button onclick="mostrarInventario()" class="flex items-center justify-center px-4 py-3 bg-gradient-to-br from-green-500 to-teal-400 rounded-xl text-white hover:scale-105 hover:from-teal-500 hover:to-green-400 transition-all shadow-lg border-2 border-green-700 font-semibold">
+                        <i class="fas fa-box mr-2"></i> Mochila
+                    </button>
+                    <button onclick="mostrarHistorial()" class="flex items-center justify-center px-4 py-3 bg-gradient-to-br from-blue-500 to-indigo-400 rounded-xl text-white hover:scale-105 hover:from-indigo-500 hover:to-blue-400 transition-all shadow-lg border-2 border-blue-700 font-semibold">
+                        <i class="fas fa-history mr-2"></i> Historial
+                    </button>
+                    <button onclick="mostrarRuleta()" class="flex items-center justify-center px-4 py-3 bg-gradient-to-br from-purple-500 to-pink-400 rounded-xl text-white hover:scale-105 hover:from-pink-500 hover:to-purple-400 transition-all shadow-lg border-2 border-purple-700 font-semibold">
+                        <i class="fas fa-dice mr-2"></i> Ruleta
+                    </button>
+                    <button onclick="abrirModalEquipoUsuario()" class="flex items-center justify-center px-4 py-3 bg-gradient-to-br from-yellow-500 to-orange-400 rounded-xl text-white hover:scale-105 hover:from-yellow-600 hover:to-orange-400 transition-all shadow-lg border-2 border-yellow-700 font-semibold">
+                        <i class="fas fa-users mr-2"></i> Mi Equipo Pokémon
+                    </button>
+                    <button onclick="abrirResumenUsuario()" class="flex items-center justify-center px-4 py-3 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl text-white hover:scale-105 transition-all shadow-lg border-2 border-indigo-700 font-semibold">
+                        <i class="fas fa-user-circle mr-2"></i> Resumen
+                    </button>
+                    <!-- Botón fijo para administración de usuarios (visibilidad forzada para pruebas) -->
+                    <button id="btnAdminUsuarios" onclick="abrirAdminUsuarios()" class="flex items-center justify-center px-4 py-3 bg-red-600 text-white rounded-xl hover:scale-105 transition-all shadow-lg border-2 border-red-700 font-semibold" style="display:inline-flex; align-items:center;">
+                        <i class="fas fa-user-shield mr-2"></i> Editar Usuarios
+                    </button>
+                    <button onclick="abrirListaUsuarios()" class="flex items-center justify-center px-4 py-3 bg-gradient-to-br from-green-600 to-emerald-600 rounded-xl text-white hover:scale-105 transition-all shadow-lg border-2 border-green-700 font-semibold">
+                        <i class="fas fa-users-cog mr-2"></i> Entrenadores
+                    </button>
+                    <button onclick="logout()" class="flex items-center justify-center px-4 py-3 bg-gradient-to-br from-gray-500 to-gray-400 rounded-xl text-white hover:scale-105 hover:from-gray-400 hover:to-gray-500 transition-all shadow-lg border-2 border-gray-700 font-semibold">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Salir
+                    </button>
+                </nav>
+            </header>
+            <div id="player-content" class="min-h-[180px]">
+                <p class="text-center text-indigo-500 mt-12 text-2xl font-semibold">¡Selecciona una opción para comenzar tu viaje!</p>
+            </div>
+        </div>
+
+        <!-- PANEL DE ADMIN -->
+        <div id="adminPanel" class="bg-white/80 backdrop-blur-sm p-6 rounded-3xl shadow-2xl mt-8 hidden border-4 border-white">
+            <header class="flex flex-col sm:flex-row justify-between items-center pb-4 mb-4 border-b-2 border-gray-300">
+                <h2 class="text-3xl font-bold text-orange-600 flex items-center mb-4 sm:mb-0"><i class="fas fa-cogs mr-2"></i> Panel de Administración</h2>
+                <div class="flex items-center">
+                    <button onclick="logout()" class="flex items-center p-3 bg-gray-500 rounded-xl text-white hover:bg-gray-600 transition-colors shadow-md border-2 border-gray-700">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Salir
+                    </button>
+                    <button onclick="mostrarPanelRuletaAdmin()" class="flex items-center p-3 bg-purple-500 rounded-xl text-white hover:bg-purple-600 transition-colors shadow-md border-2 border-purple-700 ml-2">
+                        <i class="fas fa-dice mr-2"></i> Admin Ruleta
+                    </button>
+                    <button onclick="abrirAdminUsuarios()" class="flex items-center p-3 bg-red-600 rounded-xl text-white hover:bg-red-700 transition-colors shadow-md border-2 border-red-700 ml-2">
+                        <i class="fas fa-user-shield mr-2"></i> Admin Usuarios
+                    </button>
+                    <button onclick="abrirModalLideresGym()" class="flex items-center p-3 bg-pink-600 rounded-xl text-white hover:bg-pink-700 transition-colors shadow-md border-2 border-pink-800 ml-2">
+                        <i class="fas fa-crown mr-2"></i> Admin Líderes Gym
+                    </button>
+                    <button id="btnOtorgarMedalla" onclick="abrirModalOtorgarMedalla()" class="flex items-center p-3 bg-yellow-500 rounded-xl text-white hover:bg-yellow-600 transition-colors shadow-md border-2 border-yellow-700 ml-2 hidden">
+                        <i class="fas fa-medal mr-2"></i> Otorgar Medalla
+                    </button>
+                </div>
+            </header>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Agregar monedas -->
+                <section class="bg-white/60 p-6 rounded-2xl shadow-inner border-2 border-white">
+                    <h3 class="text-2xl font-bold mb-4 text-orange-600">Agregar Monedas</h3>
+                    <form id="addCoinsForm">
+                        <div class="mb-4">
+                            <label class="block text-gray-700 mb-2">Selecciona un Jugador</label>
+                            <select id="selectorUsuario" class="w-full bg-white/70 text-gray-900 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 border-2 border-orange-200"></select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-gray-700 mb-2">Cantidad de Monedas</label>
+                            <input type="number" id="cantidadMonedas" class="w-full bg-white/70 text-gray-900 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 border-2 border-orange-200" placeholder="Cantidad">
+                        </div>
+                        <button type="submit" class="w-full bg-orange-500 text-white font-bold p-3 rounded-xl hover:bg-orange-600 transition-colors shadow-md border-2 border-orange-700">
+                            <i class="fas fa-coins mr-2"></i> Agregar Monedas
+                        </button>
+                    </form>
+                </section>
+                <!-- Agregar monedas de ruleta -->
+                <section class="bg-white/60 p-6 rounded-2xl shadow-inner border-2 border-white">
+                    <h3 class="text-2xl font-bold mb-4 text-yellow-600">Agregar Monedas de Ruleta</h3>
+                    <form id="addRuletaCoinsForm">
+                        <div class="mb-4">
+                            <label class="block text-gray-700 mb-2">Selecciona un Jugador</label>
+                            <select id="selectorUsuarioRuleta" class="w-full bg-white/70 text-gray-900 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 border-2 border-yellow-200"></select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-gray-700 mb-2">Cantidad de Monedas de Ruleta</label>
+                            <input type="number" id="cantidadMonedasRuleta" class="w-full bg-white/70 text-gray-900 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 border-2 border-yellow-200" placeholder="Cantidad">
+                        </div>
+                        <button type="submit" class="w-full bg-yellow-500 text-white font-bold p-3 rounded-xl hover:bg-yellow-600 transition-colors shadow-md border-2 border-yellow-700">
+                            <i class="fas fa-circle mr-2"></i> Agregar Monedas de Ruleta
+                        </button>
+                    </form>
+                </section>
+                <!-- Agregar producto -->
+                <section class="bg-white/60 p-6 rounded-2xl shadow-inner border-2 border-white">
+                    <h3 class="text-2xl font-bold mb-4 text-orange-600">Agregar Nuevo Producto</h3>
+                    <form id="addProductForm">
+                        <div class="mb-4">
+                            <label class="block text-gray-700 mb-2">Nombre</label>
+                            <input type="text" id="nuevoNombre" class="w-full bg-white/70 text-gray-900 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 border-2 border-orange-200" placeholder="Nombre">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-gray-700 mb-2">Costo</label>
+                            <input type="number" id="nuevoPrecio" class="w-full bg-white/70 text-gray-900 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 border-2 border-orange-200" placeholder="Precio">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-gray-700 mb-2">Imagen (Subir archivo)</label>
+                            <input type="file" id="nuevaImagenFile" accept="image/*" class="w-full text-gray-900 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <div id="previewContainer" class="mt-4 hidden"><img id="previewImg" class="w-32 h-32 object-cover rounded-xl border-4 border-white"></div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-gray-700 mb-2">Categoría</label>
+                            <select id="nuevaCategoria" class="w-full bg-white/70 text-gray-900 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 border-2 border-orange-200">
+                                <option value="">-- Seleccionar categoría --</option>
+                                <option value="Estadisticas mejoradas">Estadísticas mejoradas</option>
+                                <option value="Objetos y MTs">Objetos y MTs</option>
+                                <option value="Ataque">Ataque</option>
+                                <option value="El Elegido">El Elegido</option>
+                                <option value="Retos o condiciones">Retos o condiciones</option>
+                                <option value="Revivir y protecciones">Revivir y protecciones</option>
+                                <option value="Economia">Economía</option>
+                                <option value="Aura y apoyo">Aura y apoyo</option>
+                                <option value="Captura">Captura</option>
+                            </select>
+                        </div>
+                        <!-- 1. Agrega un campo de descripción en el formulario de agregar producto (admin) -->
+                        <div class="mb-4">
+                            <label class="block text-gray-700 mb-2">Descripción</label>
+                            <textarea id="nuevaDescripcion" class="w-full bg-white/70 text-gray-900 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 border-2 border-orange-200" placeholder="Descripción del producto"></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-green-500 text-white font-bold p-3 rounded-xl hover:bg-green-600 transition-colors shadow-md border-2 border-green-700">
+                            <i class="fas fa-plus mr-2"></i> Agregar Producto
+                        </button>
+                    </form>
+                </section>
+                <!-- Ver Historial de Jugadores -->
+                <section class="bg-white/60 p-6 rounded-2xl shadow-inner col-span-1 md:col-span-2 border-2 border-white">
+                    <h3 class="text-2xl font-bold mb-4 text-orange-600">Ver Historial de Entrenadores</h3>
+                    <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4 mb-4">
+                        <label class="block text-gray-700 w-full md:w-auto">Selecciona un Entrenador</label>
+                        <select id="selectorHistorial" class="w-full bg-white/70 text-gray-900 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 flex-1 border-2 border-orange-200"></select>
+                        <button onclick="verHistorialJugador()" class="w-full md:w-auto bg-blue-500 text-white font-bold p-3 rounded-xl hover:bg-blue-600 transition-colors shadow-md border-2 border-blue-700">
+                            <i class="fas fa-history mr-2"></i> Ver Historial
+                        </button>
+                    </div>
+                    <div id="historialJugadorContainer"></div>
+                </section>
+            </div>
+            <!-- Lista de productos existentes en admin -->
+            <h3 class="text-2xl font-bold text-orange-600 mt-6 mb-4">Productos existentes</h3>
+            <div id="listaProductosAdmin" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+
+            <!-- Panel de edición de la ruleta (admin) -->
+            <h3 class="text-2xl font-bold text-purple-600 mt-6 mb-4">Premios de la Ruleta</h3>
+            <div id="adminRuletaPremios" class="mb-8"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para agregar/editar equipo Pokémon del usuario -->
+<div id="modalEquipoUsuario" class="modal-overlay">
+    <div class="bg-white rounded-2xl shadow-xl w-11/12 max-w-3xl p-6 md:p-8 relative transform transition-transform duration-300 scale-95 opacity-0" id="modalEquipoUsuarioContent">
+        <button onclick="cerrarModal('modalEquipoUsuario')" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900 text-2xl font-bold transition-transform duration-300 hover:scale-125">&times;</button>
+        <h3 class="text-2xl font-bold text-yellow-600 mb-4 text-center">Mi Equipo Pokémon</h3>
+        <div class="flex flex-col gap-4 items-stretch">
+            <form id="formEquipoUsuario" class="w-full flex flex-col gap-4 items-stretch">
+                <div id="inputsEquipoUsuario" class="grid grid-cols-2 md:grid-cols-3 gap-3 w-full"></div>
+                <button id="btnGuardarEquipo" type="button" onclick="saveEquipoFromModal(event)" class="w-full bg-yellow-500 text-white font-bold p-3 rounded-xl hover:bg-yellow-600 transition-colors shadow-md border-2 border-yellow-700">Guardar Equipo</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function abrirModalEquipoUsuario() {
+    const modal = document.getElementById('modalEquipoUsuario');
+    const modalContent = document.getElementById('modalEquipoUsuarioContent');
+    bringModalToFront(modal);
+    modal.classList.add('active');
+    setTimeout(() => {
+        modalContent.classList.remove('scale-95', 'opacity-0');
+        modalContent.classList.add('scale-100', 'opacity-100');
+    }, 10);
+    // Render inputs
+    const inputs = document.getElementById('inputsEquipoUsuario');
+    inputs.innerHTML = '';
+    let equipo = (usuarioActivo && usuarioActivo.equipoPokemon) ? usuarioActivo.equipoPokemon : [];
+    for (let i = 0; i < 6; i++) {
+    const gifData = equipo[i] ? (equipo[i].gif || '') : '';
+    const gifKey = equipo[i] ? equipo[i].gifKey : undefined;
+        inputs.innerHTML += `
+            <div class='flex flex-col items-center'>
+                <label class='text-xs text-gray-500 mb-1'>Slot ${i+1} - Subir GIF</label>
+                <input type='file' accept='image/gif,image/*' id='inputGif${i}' name='gif${i}' class='text-xs' onchange='previewGifForSlot(event, ${i})'>
+                <div class='mt-2' style='width:64px; height:64px;'>
+            <img id='inputGifPreview${i}' src='${gifData}' data-gifkey='${gifKey||""}' alt='Pokémon' class='w-20 h-20 object-contain rounded' style='display:${gifData?"inline-block":"none"}'>
+                </div>
+                <button type='button' onclick='removeGifSlot(${i})' class='mt-2 text-xs text-red-600 hover:underline'>Eliminar GIF</button>
+            </div>
+        `;
+    }
+    // Rebind form submit to named handler to ensure it works
+    const form = document.getElementById('formEquipoUsuario');
+    if (form) {
+        form.removeEventListener('submit', saveEquipoFromModal);
+        form.addEventListener('submit', saveEquipoFromModal);
+    // Fallback assignment for older browsers
+    form.onsubmit = saveEquipoFromModal;
+    }
+    // Bind explicit click on the save button as extra fallback
+    const btnGuardar = document.getElementById('btnGuardarEquipo');
+    if (btnGuardar) {
+        btnGuardar.removeEventListener('click', saveEquipoFromModal);
+        btnGuardar.addEventListener('click', saveEquipoFromModal);
+    }
+}
+
+
+function saveEquipoFromModal(e) {
+    try {
+    console.log('saveEquipoFromModal called', { hasEvent: !!e, usuarioActivo: !!usuarioActivo });
+    if (e && e.preventDefault) e.preventDefault();
+    const btn = document.getElementById('btnGuardarEquipo');
+    if (btn) { btn.disabled = true; btn.innerText = 'Guardando...'; }
+        if (!usuarioActivo) {
+            mostrarMensajeFlotante('Debes iniciar sesión para guardar el equipo.','bg-red-600');
+            return;
+        }
+        const container = document.getElementById('inputsEquipoUsuario');
+    // Construir equipo únicamente con GIFs (ya no se guardan nombres)
+    const equipo = [];
+    for (let i = 0; i < 6; i++) {
+        equipo[i] = { };
+    }
+
+    // Procesar archivos GIF para cada slot (si hay)
+    // Validar tamaños primero para evitar exceder localStorage (QuotaExceeded)
+    const MAX_BYTES = 5000 * 1024; // 5000 KB (aprox 5 MB) por GIF
+    const oversizedSlots = [];
+    for (let i = 0; i < 6; i++) {
+        const fileInput = document.getElementById(`inputGif${i}`);
+        if (fileInput && fileInput.files && fileInput.files[0]) {
+            const file = fileInput.files[0];
+            if (file.size && file.size > MAX_BYTES) {
+                oversizedSlots.push({ slot: i, size: file.size });
+            }
+        }
+    }
+    if (oversizedSlots.length) {
+        const slots = oversizedSlots.map(s => (s.slot + 1)).join(', ');
+        mostrarMensajeFlotante(`Uno o más GIF son demasiado grandes (slots: ${slots}). Límite: 500KB. Reduce el tamaño y vuelve a intentar.`, 'bg-red-600');
+        if (btn) { btn.disabled = false; btn.innerText = 'Guardar Equipo'; }
+        return;
+    }
+
+    const filePromises = [];
+    for (let i = 0; i < 6; i++) {
+        const fileInput = document.getElementById(`inputGif${i}`);
+        if (fileInput && fileInput.files && fileInput.files[0]) {
+            const file = fileInput.files[0];
+            const p = new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    equipo[i].gif = ev.target.result;
+                    resolve();
+                };
+                reader.onerror = function(ev) { resolve(); };
+                reader.readAsDataURL(file);
+            });
+            filePromises.push(p);
+        }
+    }
+
+    Promise.all(filePromises).then(async () => {
+                // Para cada slot, si la preview tiene data-gifkey, úsala; si la preview tiene dataURL (nuevo upload), guarda en IDB y genera gifKey
+                const resultado = [];
+                for (let i = 0; i < 6; i++) {
+                    const preview = document.getElementById(`inputGifPreview${i}`);
+                    if (preview) {
+                        const existingKey = preview.getAttribute('data-gifkey');
+                        if (existingKey) {
+                            resultado.push({ gifKey: existingKey });
+                            continue;
+                        }
+                    }
+                    if (equipo[i] && equipo[i].gif) {
+                        // equipo[i].gif es dataURL -> convertir a blob y guardar en IDB
+                        try {
+                            const blob = dataURLtoBlob(equipo[i].gif);
+                            const id = `gif_${usuarioActivo.usuario}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+                            await saveGifBlob(id, blob);
+                            resultado.push({ gifKey: id });
+                        } catch (e) {
+                            console.warn('No se pudo guardar gif en IDB para slot', i, e);
+                        }
+                    }
+                }
+                usuarioActivo.equipoPokemon = resultado.slice(0,6);
+            // Asegura que el array `usuarios` contenga la versión actualizada de usuarioActivo
+            try {
+                const idx = usuarios.findIndex(u => u.usuario === usuarioActivo.usuario);
+                if (idx >= 0) {
+                    usuarios[idx] = usuarioActivo;
+                }
+            } catch (syncErr) {
+                console.warn('No se pudo sincronizar usuarioActivo con usuarios array:', syncErr);
+            }
+                console.log('Guardando usuarioActivo.equipoPokemon (keys):', usuarioActivo.equipoPokemon);
+                // sincronizar en usuarios
+                try {
+                    const idx = usuarios.findIndex(u => u.usuario === usuarioActivo.usuario);
+                    if (idx >= 0) usuarios[idx] = usuarioActivo;
+                } catch (syncErr) { console.warn('No se pudo sincronizar usuarioActivo con usuarios array:', syncErr); }
+                guardarDatos();
+            if (typeof renderEquipoUsuarioPerfil === 'function') renderEquipoUsuarioPerfil(usuarioActivo);
+            mostrarMensajeFlotante('¡Equipo guardado con éxito!','bg-yellow-600');
+            cerrarModal('modalEquipoUsuario');
+            if (btn) { btn.disabled = false; btn.innerText = 'Guardar Equipo'; }
+        }).catch(err => {
+            console.error('Error guardando equipo:', err);
+            const msg = err && err.message ? err.message : 'Error al guardar el equipo.';
+            mostrarMensajeFlotante(`Error al guardar el equipo. ${msg}`, 'bg-red-600');
+            try {
+                localStorage.setItem('ultimoErrorGuardarEquipo', JSON.stringify({ time: Date.now(), error: msg, stack: err && err.stack }));
+            } catch (e2) {
+                console.warn('No se pudo guardar info de error en localStorage', e2);
+            }
+            if (btn) { btn.disabled = false; btn.innerText = 'Guardar Equipo'; }
+        });
+    } catch (err) {
+        console.error('saveEquipoFromModal threw:', err);
+        mostrarMensajeFlotante('Error interno al guardar el equipo. Ver consola.', 'bg-red-600');
+        const btn2 = document.getElementById('btnGuardarEquipo');
+        if (btn2) { btn2.disabled = false; btn2.innerText = 'Guardar Equipo'; }
+    }
+}
+
+// Helper to remove GIF from a slot (clears input and preview)
+function removeGifSlot(slotIndex) {
+    const fileInput = document.getElementById(`inputGif${slotIndex}`);
+    const img = document.getElementById(`inputGifPreview${slotIndex}`);
+    if (fileInput) fileInput.value = '';
+    if (img) {
+        const key = img.getAttribute('data-gifkey');
+        if (key) {
+            // borrar del IDB
+            deleteGifById(key).catch(()=>{});
+            img.removeAttribute('data-gifkey');
+        }
+        img.src = '';
+        img.style.display = 'none';
+    }
+}
+
+// Maneja la previsualización local de GIFs seleccionados por slot
+function previewGifForSlot(event, slotIndex) {
+    const file = event.target.files[0];
+    const img = document.getElementById(`inputGifPreview${slotIndex}`);
+    if (!img) return;
+    if (!file) {
+        img.src = '';
+        img.style.display = 'none';
+        return;
+    }
+    // Validar tipo GIF (acepta también otros tipos de imagen)
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        img.src = e.target.result;
+    // remove any gifKey since we're previewing a new upload
+    img.removeAttribute('data-gifkey');
+        img.style.display = 'inline-block';
+    };
+    reader.readAsDataURL(file);
+}
+
+// Renderiza el equipo del usuario dentro del perfil (debajo de medallas)
+function renderEquipoUsuarioPerfil(user) {
+    const cont = document.getElementById('equipoUsuarioPerfil');
+    if (!cont) return;
+    if (!user || !user.equipoPokemon || !user.equipoPokemon.length) {
+        cont.innerHTML = '';
+        return;
+    }
+    const equipo6 = user.equipoPokemon.slice(0,6);
+    cont.innerHTML = `
+        <div class="bg-white/80 p-3 rounded-xl shadow-md border-2 border-yellow-200">
+            <div class="text-sm font-bold text-yellow-700 mb-2">Mi Equipo Pokémon</div>
+            <div class="flex flex-wrap gap-3 justify-center">
+                ${equipo6.map(p=>`
+                    <div class="flex flex-col items-center bg-white rounded-lg p-2 shadow border border-yellow-100 w-24">
+                        <img data-gifkey='${p.gifKey||""}' src='' alt='Pokémon' class='w-24 h-24 object-contain rounded-md mb-1'>
+                        <div class='text-xs font-bold text-yellow-700 text-center' style='height:14px'><!-- name removed --></div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    // Cargar blobs desde IndexedDB para cualquier img con data-gifkey en este contenedor
+    populateGifElements(cont);
+}
+
+// Busca <img data-gifkey='...'> dentro de root (element o selector) y asigna src con getGifBlobURL
+function populateGifElements(root) {
+    try {
+        const el = typeof root === 'string' ? document.querySelector(root) : root;
+        if (!el) return;
+        const imgs = el.querySelectorAll('img[data-gifkey]');
+        imgs.forEach(img => {
+            const key = img.getAttribute('data-gifkey');
+            if (!key) return;
+            console.log('populateGifElements: cargando clave', key);
+            getGifBlobURL(key).then(url => {
+                console.log('populateGifElements: getGifBlobURL result for', key, url);
+                if (url) {
+                    img.src = url;
+                    img.style.display = 'inline-block';
+                }
+            }).catch(err => {
+                console.warn('No se pudo obtener blob para', key, err);
+            });
+        });
+    } catch (e) { console.warn('populateGifElements error', e); }
+}
+</script>
+
+<!-- ==================== MODAL DE DETALLE DE PRODUCTO (TIENDA) ==================== -->
+<div id="modalDetalle" class="modal-overlay">
+    <div class="bg-white rounded-2xl shadow-xl w-11/12 max-w-md p-4 md:p-6 relative transform transition-transform duration-300 scale-95 opacity-0" id="modalDetalleContent">
+        <button onclick="cerrarModal('modalDetalle')" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900 text-2xl font-bold transition-transform duration-300 hover:scale-125">
+            &times;
+        </button>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+            <div class="w-full h-80 md:h-96 bg-gray-100 rounded-xl overflow-hidden border-2 border-white shadow-inner">
+                <img id="modalImagen" src="" alt="Producto" class="w-full h-full object-contain" style="max-width:600px; max-height:700px; width:100%; height:100%; margin:auto; display:block;">
+            </div>
+            <div class="flex flex-col text-center md:text-left">
+                <h3 id="modalNombre" class="text-3xl font-bold text-orange-600 mb-2"></h3>
+                <p id="modalDescripcion" class="text-lg text-gray-600 mb-4"></p>
+                <p class="text-sm font-semibold text-gray-800 mb-4">Categoría: <span id="modalCategoria"></span></p>
+                <div class="flex items-center justify-center md:justify-start mb-6">
+                    <span id="modalPrecio" class="text-3xl font-bold text-teal-600 flex items-center"></span>
+                    <i class="fas fa-coins text-teal-500 ml-2"></i>
+                </div>
+                <button id="modalBotonComprar" class="w-32 md:w-32 bg-orange-500 text-white font-bold py-2 px-4 text-base rounded-xl hover:bg-orange-600 transition-colors shadow-md border-2 border-orange-700">
+                    Comprar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== NUEVO MODAL PARA EL INVENTARIO ==================== -->
+<div id="modalInventario" class="modal-overlay">
+    <div class="bg-white rounded-2xl shadow-xl w-11/12 md:w-1/2 p-6 md:p-8 relative transform transition-transform duration-300 scale-95 opacity-0" id="modalInventarioContent">
+        <button onclick="cerrarModal('modalInventario')" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900 text-2xl font-bold transition-transform duration-300 hover:scale-125">
+            &times;
+        </button>
+        <div class="flex flex-col items-center">
+            <h3 id="modalInventarioNombre" class="text-3xl font-bold text-orange-600 mb-4"></h3>
+            <div class="w-full h-80 md:h-96 bg-gray-100 rounded-xl overflow-hidden border-2 border-white shadow-inner mb-6">
+                <img id="modalInventarioImagen" src="" alt="Producto" class="w-full h-full object-contain">
+            </div>
+            <p id="modalInventarioDescripcion" class="text-lg text-gray-600 mb-4 text-center"></p>
+            <p class="text-sm font-semibold text-gray-800 mb-4">Categoría: <span id="modalInventarioCategoria"></span></p>
+            <button id="modalInventarioBotonUsar" class="w-full md:w-auto bg-green-500 text-white font-bold p-3 rounded-xl hover:bg-green-600 transition-colors shadow-md border-2 border-green-700">
+                Usar Ítem
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Mejora el cuadro de descripción para que sea un modal pequeño y elegante en vez de la burbuja flotante -->
+<div id="modalDescripcionTienda" class="modal-overlay">
+    <div class="bg-white rounded-2xl shadow-xl w-11/12 max-w-xs p-6 relative transform transition-transform duration-300 scale-95 opacity-0" id="modalDescripcionTiendaContent">
+        <button onclick="cerrarModal('modalDescripcionTienda')" class="absolute top-2 right-4 text-gray-500 hover:text-gray-900 text-2xl font-bold transition-transform duration-300 hover:scale-125">
+            &times;
+        </button>
+        <h4 id="modalDescripcionTitulo" class="text-xl font-bold text-orange-600 mb-2 text-center"></h4>
+        <p id="modalDescripcionTexto" class="text-gray-700 text-base text-center"></p>
+    </div>
+</div>
+
+<!-- MENSAJES FLOTANTES (snackbar) -->
+<div id="mensaje-flotante" class="fixed bottom-4 right-4 z-50 p-4 rounded-xl shadow-lg transform transition-transform duration-300 scale-0 origin-bottom-right"></div>
+
+<!-- Modal para editar producto (admin) -->
+<div id="modalEditarProducto" class="modal-overlay">
+    <div class="bg-white rounded-2xl shadow-xl w-11/12 max-w-md p-6 relative transform transition-transform duration-300 scale-95 opacity-0" id="modalEditarProductoContent">
+        <button onclick="cerrarModal('modalEditarProducto')" class="absolute top-2 right-4 text-gray-500 hover:text-gray-900 text-2xl font-bold transition-transform duration-300 hover:scale-125">
+            &times;
+        </button>
+        <h3 class="text-2xl font-bold text-orange-600 mb-4 text-center">Editar Producto</h3>
+        <form id="formEditarProducto">
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Nombre</label>
+                <input type="text" id="editarNombre" class="w-full bg-white/70 text-gray-900 p-3 rounded-xl border-2 border-orange-200" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Descripción</label>
+                <textarea id="editarDescripcion" class="w-full bg-white/70 text-gray-900 p-3 rounded-xl border-2 border-orange-200" required></textarea>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Precio</label>
+                <input type="number" id="editarPrecio" class="w-full bg-white/70 text-gray-900 p-3 rounded-xl border-2 border-orange-200" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Categoría</label>
+                <input type="text" id="editarCategoria" class="w-full bg-white/70 text-gray-900 p-3 rounded-xl border-2 border-orange-200" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Imagen (dejar vacío para no cambiar)</label>
+                <input type="file" id="editarImagenFile" accept="image/*" class="w-full text-gray-900 p-3 rounded-xl">
+                <div id="editarPreviewContainer" class="mt-2 hidden"><img id="editarPreviewImg" class="w-32 h-32 object-cover rounded-xl border-4 border-white"></div>
+            </div>
+            <button type="submit" class="w-full bg-green-500 text-white font-bold p-3 rounded-xl hover:bg-green-600 transition-colors shadow-md border-2 border-green-700">
+                Guardar Cambios
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Resumen de Usuario: equipo, monedas y inventario -->
+<div id="modalResumenUsuario" class="modal-overlay">
+    <div class="bg-white rounded-2xl shadow-xl w-11/12 max-w-3xl p-6 md:p-8 relative transform transition-transform duration-300 scale-95 opacity-0" id="modalResumenUsuarioContent">
+        <button onclick="cerrarModal('modalResumenUsuario')" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900 text-2xl font-bold transition-transform duration-300 hover:scale-125">&times;</button>
+        <h3 class="text-2xl font-bold text-indigo-600 mb-4 text-center">Resumen de Usuario</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <section class="bg-white/60 p-4 rounded-xl shadow-inner border-2 border-white">
+                <h4 class="text-lg font-bold text-indigo-600 mb-2">Mi Equipo</h4>
+                <div id="resumenEquipo" class="flex flex-wrap gap-2"></div>
+            </section>
+            <section class="bg-white/60 p-4 rounded-xl shadow-inner border-2 border-white">
+                <h4 class="text-lg font-bold text-indigo-600 mb-2">Monedas</h4>
+                <div class="text-3xl font-extrabold text-teal-600 mb-4 flex items-center gap-3"><i class="fas fa-coins"></i><span id="resumenMonedas">0</span></div>
+                <h4 class="text-lg font-bold text-indigo-600 mb-2">Inventario</h4>
+                <div id="resumenInventario" class="grid grid-cols-1 gap-2"></div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para listar entrenadores y ver su resumen -->
+<div id="modalListadoUsuarios" class="modal-overlay">
+    <div class="bg-white rounded-2xl shadow-xl w-11/12 max-w-2xl p-6 md:p-8 relative transform transition-transform duration-300 scale-95 opacity-0" id="modalListadoUsuariosContent">
+        <button onclick="cerrarModal('modalListadoUsuarios')" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900 text-2xl font-bold transition-transform duration-300 hover:scale-125">&times;</button>
+        <h3 class="text-2xl font-bold text-green-700 mb-4 text-center">Entrenadores</h3>
+        <div id="listaEntrenadores" class="grid grid-cols-1 gap-2 max-h-96 overflow-auto"></div>
+    </div>
+</div>
+
+<!-- ==================== MODAL DE LA RULETA ==================== -->
+<div id="modalRuleta" class="modal-overlay">
+    <div class="bg-white rounded-2xl shadow-xl w-11/12 max-w-lg p-6 relative transform transition-transform duration-300 scale-95 opacity-0" id="modalRuletaContent">
+        <button onclick="cerrarModal('modalRuleta')" class="absolute top-2 right-4 text-gray-500 hover:text-gray-900 text-2xl font-bold transition-transform duration-300 hover:scale-125">
+            &times;
+        </button>
+        <h3 class="text-2xl font-bold text-purple-600 mb-4 text-center">Ruleta de Premios</h3>
+        <canvas id="canvasRuleta" width="400" height="400" class="mx-auto mb-4"></canvas>
+        <button id="girarRuletaBtn" class="w-full bg-purple-500 text-white font-bold p-3 rounded-xl hover:bg-purple-600 transition-colors shadow-md border-2 border-purple-700 mb-2">
+            Girar Ruleta
+        </button>
+        <div id="premioRuleta" class="text-center text-lg font-bold text-green-600 mt-2"></div>
+    </div>
+</div>
+
+<!-- ==================== MODAL ADMIN RULETA ==================== -->
+<div id="modalAdminRuleta" class="modal-overlay">
+    <div class="bg-white rounded-2xl shadow-xl w-11/12 max-w-lg p-6 relative transform transition-transform duration-300 scale-95 opacity-0" id="modalAdminRuletaContent">
+        <button onclick="cerrarModal('modalAdminRuleta')" class="absolute top-2 right-4 text-gray-500 hover:text-gray-900 text-2xl font-bold transition-transform duration-300 hover:scale-125">
+            &times;
+        </button>
+        <h3 class="text-2xl font-bold text-purple-600 mb-4 text-center">Administrar Premios de la Ruleta</h3>
+        <div id="adminRuletaPremiosPanel"></div>
+    </div>
+</div>
+
+<!-- Modal para otorgar medalla -->
+<div id="modalOtorgarMedalla" class="modal-overlay">
+    <div class="bg-white rounded-2xl shadow-xl w-11/12 max-w-md p-6 relative transform transition-transform duration-300 scale-95 opacity-0" id="modalOtorgarMedallaContent">
+        <button onclick="cerrarModal('modalOtorgarMedalla')" class="absolute top-2 right-4 text-gray-500 hover:text-gray-900 text-2xl font-bold transition-transform duration-300 hover:scale-125">&times;</button>
+        <h3 class="text-2xl font-bold text-yellow-600 mb-4 text-center">Otorgar o Eliminar Medallas</h3>
+        <form id="formOtorgarMedalla">
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Selecciona un usuario</label>
+                <select id="selectorUsuarioMedalla" class="w-full bg-white/70 text-gray-900 p-3 rounded-xl border-2 border-yellow-200"></select>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Imagen de la medalla</label>
+                <input type="file" id="inputImagenMedalla" accept="image/*" class="w-full text-gray-900 p-3 rounded-xl">
+                <div id="previewMedallaContainer" class="mt-4 hidden"><img id="previewMedallaImg" class="w-20 h-20 object-contain rounded-xl border-4 border-yellow-300"></div>
+            </div>
+            <button type="submit" class="w-full bg-yellow-500 text-white font-bold p-3 rounded-xl hover:bg-yellow-600 transition-colors shadow-md border-2 border-yellow-700 mb-4">
+                <i class="fas fa-medal mr-2"></i> Otorgar Medalla
+            </button>
+        </form>
+        <div id="panelEliminarMedallas" class="mt-6">
+            <label class="block text-gray-700 mb-2">Medallas del usuario seleccionado</label>
+            <div id="listaMedallasUsuario" class="flex flex-wrap gap-4 justify-center"></div>
+        </div>
+    </div>
+</div>
+<!-- Nuevo Modal para administrar Líderes de Gimnasio -->
+<div id="modalAdminLideresGym" class="modal-overlay">
+    <div class="bg-white rounded-2xl shadow-xl w-11/12 max-w-4xl md:max-w-5xl p-2 md:p-8 flex flex-col md:flex-row gap-8 relative transform transition-transform duration-300 scale-95 opacity-0" id="modalAdminLideresGymContent" style="overflow:auto; min-width:350px; min-height:350px;">
+    <!-- Estilos de resize eliminados -->
+        <button onclick="cerrarModal('modalAdminLideresGym')" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900 text-2xl font-bold transition-transform duration-300 hover:scale-125">
+            &times;
+        </button>
+    <h3 id="tituloAdminLideresGym" class="text-2xl font-bold text-pink-600 mb-4 text-center">Administrar Líderes de Gimnasio</h3>
+<script>
+// Oculta el título de administración para usuarios que no sean admin ni Odin
+window.addEventListener('DOMContentLoaded', function() {
+    var usuarioActivo = window.usuarioActivo;
+    var titulo = document.getElementById('tituloAdminLideresGym');
+    if (titulo && (!usuarioActivo || (!usuarioActivo.esAdmin && usuarioActivo.usuario !== 'odin'))) {
+        titulo.style.display = 'none';
+    }
+});
+
+// ==================== EVENTO FOTO PERFIL ====================
+document.getElementById('inputFotoPerfil').addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        if (!usuarioActivo) return;
+        usuarioActivo.fotoPerfil = e.target.result;
+        localStorage.setItem('usuarios', JSON.stringify(usuarios));
+        document.getElementById('fotoPerfilImg').src = usuarioActivo.fotoPerfil;
+        document.getElementById('fotoPerfilImg').classList.remove('hidden');
+        document.getElementById('iconoPerfilDefault').classList.add('hidden');
+    };
+    reader.readAsDataURL(file);
+});
+
+</script>
+    <section id="seccionFormLideresGym" class="bg-white/60 p-4 md:p-6 rounded-2xl shadow-inner border-2 border-white flex-1 max-w-md" style="display:none;">
+            <h4 class="text-xl font-bold text-pink-600 mb-4 text-left">Añadir/Editar Líder</h4>
+            <form id="formLiderGym" class="text-left">
+                <input type="hidden" id="liderId">
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Nombre</label>
+                    <input type="text" id="nombreLider" class="w-full bg-white/70 text-gray-900 p-3 rounded-xl border-2 border-pink-200" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Especialidad</label>
+                    <input type="text" id="especialidadLider" class="w-full bg-white/70 text-gray-900 p-3 rounded-xl border-2 border-pink-200" placeholder="Especialidad (p. ej., Fuego)" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Nivel del equipo</label>
+                    <input type="number" id="nivelLider" class="w-full bg-white/70 text-gray-900 p-3 rounded-xl border-2 border-pink-200" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Imagen (Subir archivo)</label>
+                    <input type="file" id="imagenLiderFile" accept="image/*" class="w-full text-gray-900 p-3 rounded-xl">
+                    <div id="previewLiderContainer" class="mt-4 hidden"><img id="previewLiderImg" class="w-32 h-32 object-contain rounded-xl border-4 border-white"></div>
+                </div>
+                <div id="equipoLiderInputs" class="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+                    <!-- Inputs para el equipo Pokémon se renderizarán aquí -->
+                </div>
+                 <button type="button" onclick="guardarLiderGym()" class="w-full bg-pink-600 text-white font-bold p-3 rounded-xl hover:bg-pink-700 transition-colors shadow-md border-2 border-pink-800">
+                    Guardar Líder
+                </button>
+            </form>
+        </section>
+
+        <section class="bg-white/60 p-6 rounded-2xl shadow-inner border-2 border-white">
+            <h4 class="text-2xl font-extrabold text-pink-700 mb-6 tracking-wide text-center drop-shadow">Líderes Existentes</h4>
+            <div id="listaLideresGym" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 justify-center items-start">
+            </div>
+            <style>
+            #listaLideresGym {
+                justify-items: center;
+                align-items: start;
+            }
+            #listaLideresGym .gym-leader-card {
+                margin-bottom: 1.2rem;
+                margin-right: 0.8rem;
+                background: linear-gradient(135deg, #fff 60%, #fce7f3 100%);
+                border-radius: 1.2rem;
+                box-shadow: 0 4px 18px #f472b655, 0 2px 8px #0001;
+                border: 2px solid #f472b6;
+                padding: 0.8rem 0.5rem 0.7rem 0.5rem;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                transition: box-shadow 0.2s, border 0.2s, transform 0.2s;
+                position: relative;
+                min-width: 110px;
+                min-height: 150px;
+                max-width: 140px;
+            }
+            #listaLideresGym .gym-leader-card:hover {
+                box-shadow: 0 8px 40px #f472b6aa, 0 8px 32px #a78bfa55;
+                border: 2.5px solid #a78bfa;
+                transform: translateY(-4px) scale(1.03);
+            }
+            #listaLideresGym .gym-leader-img {
+                width: 140px;
+                height: 140px;
+                object-fit: cover;
+                border-radius: 1.7rem;
+                border: 4px solid #fbbf24;
+                box-shadow: 0 2px 18px #fbbf2488;
+                margin-bottom: 1rem;
+                background: #fff;
+            }
+            #listaLideresGym .gym-leader-name {
+                font-size: 1.5rem;
+                font-weight: 900;
+                color: #be185d;
+                margin-bottom: 0.5rem;
+                letter-spacing: 0.03em;
+                text-shadow: 0 2px 8px #f472b655;
+                text-align: center;
+            }
+            #listaLideresGym .gym-leader-specialty {
+                font-size: 1.1rem;
+                font-weight: 700;
+                color: #f472b6;
+                background: #fff7fb;
+                border-radius: 1rem;
+                padding: 0.3rem 1.2rem;
+                margin-bottom: 0.5rem;
+                border: 1.5px solid #f472b6;
+                box-shadow: 0 1px 4px #f472b622;
+            }
+            #listaLideresGym .gym-leader-level {
+                font-size: 1rem;
+                font-weight: 700;
+                color: #7c3aed;
+                background: #f3e8ff;
+                border-radius: 1rem;
+                padding: 0.2rem 1rem;
+                margin-bottom: 0.7rem;
+                border: 1.5px solid #a78bfa;
+                box-shadow: 0 1px 4px #a78bfa22;
+            }
+            </style>
+            <style>
+            #listaLideresGym .admin-lider-img-container {
+                width: 100px;
+                height: 100px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0 auto 0.5rem auto;
+                background: #fff;
+                border-radius: 1rem;
+                border: 3px solid #f472b6;
+                box-shadow: 0 2px 8px #0001;
+                overflow: hidden;
+            }
+            #listaLideresGym .admin-lider-img-container img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                border-radius: 1rem;
+                display: block;
+            }
+            </style>
+        </section>
+    </div>
+</div>
+
+<div id="ruleta-premio-anim" style="display:none; position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,0.7); align-items:center; justify-content:center;">
+    <div style="animation: popscale 0.7s cubic-bezier(.68,-0.55,.27,1.55); background:white; border-radius:2rem; box-shadow:0 8px 32px #0008; padding:2rem; display:flex; flex-direction:column; align-items:center;">
+        <img id="ruleta-premio-img" src="" alt="Premio" style="width:180px; height:240px; object-fit:contain; border-radius:1rem; border:4px solid #a78bfa; box-shadow:0 4px 24px #a78bfa88;">
+        <div id="ruleta-premio-nombre" style="margin-top:1.5rem; font-size:2rem; font-weight:bold; color:#7c3aed; text-align:center;"></div>
+    </div>
+</div>
+
+
+<audio id="audioRuleta" src="https://vgmsite.com/soundtracks/pokemon-gameboy-sound-collection/uvqjzjzv/SE%20-%20Slot%20Machine.mp3"></audio>
+<audio id="audioCompra" src="https://vgmsite.com/soundtracks/pokemon-gameboy-sound-collection/uvqjzjzv/SE%20-%20Buy.mp3"></audio>
+<audio id="audioMonedas" src="https://assets.mixkit.co/sfx/download/mixkit-arcade-game-jump-coin-216.wav"></audio>
+<!-- Efectos de sonido para la ruleta -->
+<audio id="audioTick" src="https://cdn.pixabay.com/audio/2022/07/26/audio_124bfae7e2.mp3"></audio>
+<audio id="audioWin" src="https://cdn.pixabay.com/audio/2022/07/26/audio_124bfae7e2.mp3"></audio>
+
+<script>
+    // ==================== DATOS INICIALES ====================
+    let usuarios = JSON.parse(localStorage.getItem("usuarios")) || [
+        { usuario: "odin", password: "admin", nombre: "Odin", saldo: 9999, monedasRuleta: 10, inventario: [], historialCompras: [], historialUsos: [], esAdmin: true },
+        { usuario: "athena", password: "admin", nombre: "Athena", saldo: 8000, monedasRuleta: 10, inventario: [], historialCompras: [], historialUsos: [], esAdmin: true },
+        { usuario: "hugo", password: "123", nombre: "Hugo", saldo: 500, monedasRuleta: 2, inventario: [], historialCompras: [], historialUsos: [], esAdmin: false },
+        { usuario: "ivan", password: "456", nombre: "Ivan", saldo: 200, monedasRuleta: 1, inventario: [], historialCompras: [], historialUsos: [], esAdmin: false }
+    ];
+    let productos = JSON.parse(localStorage.getItem("productos")) || [
+        { id: 'item1', nombre: 'Poción', descripcion: 'Restaura 20 PS.', precio: 50, imagen: 'https://placehold.co/150x200/FF5733/FFFFFF?text=Poción', categoria: 'Revivir y protecciones' },
+        { id: 'item2', nombre: 'Superpoción', descripcion: 'Restaura 50 PS.', precio: 40, imagen: 'https://placehold.co/150x200/3498DB/ffffff?text=Superpoción', categoria: 'Revivir y protecciones' },
+        { id: 'item3', nombre: 'Poké Ball', descripcion: 'Para capturar Pokémon.', precio: 80, imagen: 'https://placehold.co/150x200/E74C3C/FFFFFF?text=Poké+Ball', categoria: 'Captura' },
+        { id: 'item4', nombre: 'Caramelo Raro', descripcion: 'Sube un nivel a tu Pokémon.', precio: 30, imagen: 'https://placehold.co/150x200/F1C40F/000000?text=Caramelo+Raro', categoria: 'Estadisticas mejoradas' }
+    ];
+    let lideresGym = JSON.parse(localStorage.getItem("lideresGym")) || [];
+    let usuarioActivo = null;
+
+    // Limpieza automática: eliminar cualquier campo 'nombre' dentro de equipoPokemon para evitar registros antiguos
+    try {
+        let cleaned = false;
+        usuarios.forEach(u => {
+            if (u.equipoPokemon && Array.isArray(u.equipoPokemon)) {
+                u.equipoPokemon.forEach(slot => {
+                    if (slot && slot.nombre !== undefined) {
+                        delete slot.nombre;
+                        cleaned = true;
+                    }
+                });
+            }
+        });
+        if (cleaned) {
+            console.log('Sanitizando usuarios: eliminados campos "nombre" en equipoPokemon.');
+            localStorage.setItem('usuarios', JSON.stringify(usuarios));
+        }
+    } catch (sanErr) {
+        console.warn('Error durante la sanitización de equipoPokemon:', sanErr);
+    }
+
+    // ---------------- IndexedDB para almacenar GIFs (evita usar localStorage para dataURLs grandes) ----------------
+    function openGifDB() {
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open('miJuegoDB', 1);
+            req.onupgradeneeded = function(e) {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains('gifs')) {
+                    db.createObjectStore('gifs', { keyPath: 'id' });
+                }
+            };
+            req.onsuccess = function() { resolve(req.result); };
+            req.onerror = function(ev) { reject(ev.target.error); };
+        });
+    }
+
+    function saveGifBlob(id, blob) {
+        return openGifDB().then(db => new Promise((resolve, reject) => {
+            const tx = db.transaction('gifs', 'readwrite');
+            const store = tx.objectStore('gifs');
+            const putReq = store.put({ id, blob });
+            putReq.onsuccess = () => { resolve(); };
+            putReq.onerror = (e) => reject(e.target.error);
+        }));
+    }
+
+    function getGifBlobURL(id) {
+        return openGifDB().then(db => new Promise((resolve, reject) => {
+            const tx = db.transaction('gifs', 'readonly');
+            const store = tx.objectStore('gifs');
+            const getReq = store.get(id);
+            getReq.onsuccess = function() {
+                const res = getReq.result;
+                if (!res || !res.blob) {
+                    console.warn('getGifBlobURL: no blob found for id', id);
+                    return resolve(null);
+                }
+                try {
+                    const url = URL.createObjectURL(res.blob);
+                    resolve(url);
+                } catch (e) {
+                    console.warn('getGifBlobURL: error creating object URL for', id, e);
+                    resolve(null);
+                }
+            };
+            getReq.onerror = function(e) { console.warn('getGifBlobURL: getReq.onerror', id, e); reject(e.target.error); };
+        }));
+    }
+
+    function deleteGifById(id) {
+        return openGifDB().then(db => new Promise((resolve, reject) => {
+            const tx = db.transaction('gifs', 'readwrite');
+            const store = tx.objectStore('gifs');
+            const del = store.delete(id);
+            del.onsuccess = () => resolve();
+            del.onerror = (e) => reject(e.target.error);
+        }));
+    }
+
+    function dataURLtoBlob(dataurl) {
+        const arr = dataurl.split(',');
+        const mime = arr[0].match(/:(.*?);/)[1];
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) u8arr[n] = bstr.charCodeAt(n);
+        return new Blob([u8arr], { type: mime });
+    }
+
+    // Migración asíncrona: convertir dataURLs existentes en users -> equipoPokemon.gif en objetos en IndexedDB y guardar gifKey
+    (async function migrateGifsToIDB() {
+        try {
+            let migrated = false;
+            for (const u of usuarios) {
+                if (u.equipoPokemon && Array.isArray(u.equipoPokemon)) {
+                    for (let i = 0; i < u.equipoPokemon.length; i++) {
+                        const slot = u.equipoPokemon[i];
+                        if (slot && slot.gif && typeof slot.gif === 'string' && slot.gif.startsWith('data:')) {
+                            try {
+                                const blob = dataURLtoBlob(slot.gif);
+                                const id = `gif_${u.usuario}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+                                await saveGifBlob(id, blob);
+                                slot.gifKey = id;
+                                delete slot.gif;
+                                migrated = true;
+                            } catch (e) {
+                                console.warn('No se pudo migrar gif para', u.usuario, e);
+                            }
+                        }
+                    }
+                }
+            }
+            if (migrated) {
+                localStorage.setItem('usuarios', JSON.stringify(usuarios));
+                console.log('Migrated GIF dataURLs to IndexedDB');
+            }
+        } catch (err) {
+            console.warn('Error durante migración a IndexedDB:', err);
+        }
+    })();
+
+    // Agrega un nuevo usuario administrador solo si no existe
+    const nuevoAdmin = { usuario: "adminextra", password: "superadmin", nombre: "Admin Extra", saldo: 10000, monedasRuleta: 10, inventario: [], historialCompras: [], historialUsos: [], esAdmin: true };
+    if (!usuarios.some(u => u.usuario === nuevoAdmin.usuario)) {
+        usuarios.push(nuevoAdmin);
+        localStorage.setItem("usuarios", JSON.stringify(usuarios));
+    }
+
+    // Asegura que todos los usuarios tengan la propiedad monedasRuleta
+    usuarios.forEach(u => {
+        if (u.monedasRuleta === undefined) u.monedasRuleta = 0;
+    });
+
+    // ==================== FUNCIONES DE CONTROL ====================
+    function guardarDatos() {
+        localStorage.setItem("usuarios", JSON.stringify(usuarios));
+        localStorage.setItem("productos", JSON.stringify(productos));
+        localStorage.setItem("lideresGym", JSON.stringify(lideresGym));
+    }
+
+    function borrarStorage() {
+        if (confirm("¿Estás seguro de que quieres limpiar todos los datos y restaurar la aplicación?")) {
+            localStorage.clear();
+            window.location.reload();
+        }
+    }
+
+    function mostrarMensajeFlotante(texto, bgColor = 'bg-blue-600') {
+        const mensaje = document.getElementById('mensaje-flotante');
+        mensaje.innerText = texto;
+        mensaje.className = `fixed bottom-4 right-4 z-50 p-4 rounded-xl shadow-lg text-white transform transition-all duration-300 scale-100 ${bgColor}`;
+        setTimeout(() => {
+            mensaje.className = `fixed bottom-4 right-4 z-50 p-4 rounded-xl shadow-lg text-white transform transition-all duration-300 scale-0`;
+        }, 2500);
+    }
+    
+    // Nueva función para la animación de estrellas
+    function animacionEstrellas() {
+        const container = document.getElementById('app-container');
+        const numEstrellas = 15;
+        for (let i = 0; i < numEstrellas; i++) {
+            const star = document.createElement('div');
+            star.innerText = '✨';
+            star.classList.add('star-anim');
+            // Posición aleatoria
+            const x = Math.random() * container.offsetWidth;
+            const y = Math.random() * container.offsetHeight;
+            star.style.left = `${x}px`;
+            star.style.top = `${y}px`;
+            // Retardo aleatorio
+            star.style.animationDelay = `${Math.random() * 0.5}s`;
+            container.appendChild(star);
+
+            star.addEventListener('animationend', () => {
+                star.remove();
+            });
+        }
+    }
+
+    function cambiarVista(vista) {
+        document.getElementById("perfil").classList.add('hidden');
+        document.getElementById("adminPanel").classList.add('hidden');
+        document.getElementById("auth").classList.add('hidden');
+        document.getElementById("panels-container").classList.add('hidden');
+
+        document.getElementById('player-content').innerHTML = '';
+
+        if (vista === 'login') {
+            document.getElementById("auth").classList.remove('hidden');
+        } else {
+            document.getElementById("panels-container").classList.remove('hidden');
+            if (usuarioActivo && usuarioActivo.usuario === 'odin') {
+                document.getElementById("adminPanel").classList.remove('hidden');
+            } else {
+                document.getElementById("perfil").classList.remove('hidden');
+            }
+        }
+    }
+    
+    // ==================== LOGIN / LOGOUT ====================
+    document.getElementById("loginForm").addEventListener("submit", function(e) {
+        e.preventDefault();
+        const usuario = document.getElementById("usuario").value;
+        const password = document.getElementById("password").value;
+        const errorDiv = document.getElementById("error-message");
+
+        const user = usuarios.find(u => u.usuario === usuario && u.password === password);
+        if (!user) {
+            errorDiv.innerText = "Usuario o contraseña incorrectos.";
+            errorDiv.classList.remove('hidden');
+            return;
+        }
+
+        usuarioActivo = user;
+        // Mostrar foto de perfil si existe
+        if (usuarioActivo.fotoPerfil) {
+            document.getElementById('fotoPerfilImg').src = usuarioActivo.fotoPerfil;
+            document.getElementById('fotoPerfilImg').classList.remove('hidden');
+            document.getElementById('iconoPerfilDefault').classList.add('hidden');
+        } else {
+            document.getElementById('fotoPerfilImg').classList.add('hidden');
+            document.getElementById('iconoPerfilDefault').classList.remove('hidden');
+        }
+
+    renderMedallasUsuario(usuarioActivo, 'contenedorMedallasPerfil');
+    mostrarBotonOtorgarMedalla();
+    mostrarBotonAdminUsuarios();
+        errorDiv.classList.add('hidden');
+        document.getElementById("nombreUsuario").innerText = usuarioActivo.nombre;
+        document.getElementById("saldo").innerText = usuarioActivo.saldo;
+        document.getElementById("monedasRuleta").innerText = usuarioActivo.monedasRuleta ?? 0;
+        const btnMonedas = document.getElementById("btnMonedasRuleta");
+        if(btnMonedas) btnMonedas.innerText = usuarioActivo.monedasRuleta ?? 0;
+    // Renderizar equipo en el perfil si existe
+    if (typeof renderEquipoUsuarioPerfil === 'function') renderEquipoUsuarioPerfil(usuarioActivo);
+        cambiarVista(usuarioActivo.esAdmin ? 'admin' : 'dashboard');
+        
+        if (usuarioActivo.esAdmin) {
+            actualizarSelectorUsuarios();
+            renderProductosAdmin();
+        }
+        mostrarMensajeFlotante(`¡Bienvenido, ${usuarioActivo.nombre}!`, 'bg-green-600');
+    });
+
+    function logout() {
+    usuarioActivo = null;
+    mostrarBotonOtorgarMedalla();
+    mostrarBotonAdminUsuarios();
+    cambiarVista('login');
+    document.getElementById("usuario").value = "";
+    document.getElementById("password").value = "";
+    // Limpiar vista de equipo en perfil
+    if (typeof renderEquipoUsuarioPerfil === 'function') renderEquipoUsuarioPerfil(null);
+    }
+
+    // ==================== TIENDA ====================
+    function mostrarTienda() {
+        const container = document.getElementById('player-content');
+        container.innerHTML = `
+            <h3 class="text-2xl font-bold mb-6 text-center text-orange-600">Tienda Pokémon</h3>
+            <div id="listaProductos" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+        `;
+        renderTienda();
+    }
+
+    function renderTienda() {
+        const lista = document.getElementById("listaProductos");
+        if (!lista) return;
+        lista.innerHTML = "";
+        productos.filter(p => !p.oculto).forEach((p, i) => {
+            const div = document.createElement("div");
+            div.className = "bg-gradient-to-br from-white/90 to-blue-50 p-3 rounded-2xl shadow-xl border border-orange-200 flex flex-col items-center text-center transform transition-transform duration-300 hover:scale-105 cursor-pointer gap-3";
+            div.style.width = "220px";
+            div.style.minHeight = "410px";
+            div.innerHTML = `
+                <div class=\"flex justify-center items-center mb-2 relative\" style=\"width:200px; height:260px; margin:auto; background:white; border-radius:1rem; box-shadow:0 2px 12px #0001; z-index:1;\">
+                    <img src=\"${p.imagen}\" alt=\"${p.nombre}\" class=\"object-contain rounded-xl shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-150 z-40\" onclick=\"mostrarDetalleItem('${p.id}')\">
+                </div>
+                <h3 class=\"text-xl font-extrabold text-orange-600 mb-1 drop-shadow\">${p.nombre}</h3>
+                <p class=\"text-xs font-semibold text-gray-800 mb-2\">Categoría: <span class=\"font-bold text-orange-500\">${p.categoria}</span></p>
+                <span class=\"text-xl font-bold text-teal-600 mb-2 flex items-center justify-center gap-2\">${p.precio} <i class=\"fas fa-coins\"></i></span>
+                <div class=\"flex flex-col gap-2 w-full\">
+                  <button onclick=\"mostrarDescripcionTienda('${p.id}')\" class=\"bg-blue-500 text-white text-xs px-3 py-1 rounded-full hover:bg-blue-600 transition-colors w-full shadow\">Ver descripción</button>
+                  <button onclick=\"mostrarDetalleItem('${p.id}')\" class=\"bg-orange-500 text-white font-bold px-4 py-2 rounded-xl hover:bg-orange-600 transition-colors shadow-md border-2 border-orange-400 w-full text-base\">
+                      <i class=\"fas fa-shopping-cart mr-2\"></i> Comprar
+                  </button>
+                </div>
+            `;
+            lista.appendChild(div);
+        });
+    }
+
+    // Nueva función para mostrar la descripción en un alert bonito
+    function mostrarDescripcionTienda(itemId) {
+        const item = productos.find(p => p.id === itemId);
+        if (!item) return;
+        document.getElementById('modalDescripcionTitulo').innerText = item.nombre;
+        document.getElementById('modalDescripcionTexto').innerText = item.descripcion ? item.descripcion : "Sin descripción.";
+        const modal = document.getElementById('modalDescripcionTienda');
+        const modalContent = document.getElementById('modalDescripcionTiendaContent');
+    bringModalToFront(modal);
+    modal.classList.add('active');
+        setTimeout(() => {
+            modalContent.classList.remove('scale-95', 'opacity-0');
+            modalContent.classList.add('scale-100', 'opacity-100');
+        }, 10);
+    }
+
+    function comprarItem(itemId) {
+        const item = productos.find(p => p.id === itemId);
+        if (!item) return;
+
+        if (usuarioActivo.saldo < item.precio) {
+            mostrarMensajeFlotante("No tienes suficientes monedas.", 'bg-red-600');
+            return;
+        }
+
+        usuarioActivo.saldo -= item.precio;
+        usuarioActivo.inventario.push(item);
+        usuarioActivo.historialCompras.push({ item: item.nombre, fecha: new Date().toLocaleString() });
+
+        document.getElementById("saldo").innerText = usuarioActivo.saldo;
+        guardarDatos();
+
+        // SONIDO DE MONEDAS
+        const audioMonedas = document.getElementById('audioMonedas');
+        audioMonedas.currentTime = 0;
+        audioMonedas.play();
+
+        mostrarMensajeFlotante(`¡Compra de ${item.nombre} exitosa!`, 'bg-green-600');
+        cerrarModal('modalDetalle');
+    }
+    
+    // Nueva función para mostrar el modal de detalle del ítem
+    function mostrarDetalleItem(itemId) {
+        const item = productos.find(p => p.id === itemId);
+        if (!item) return;
+
+        // Llenar el modal con los datos del producto
+        document.getElementById('modalImagen').src = item.imagen;
+        document.getElementById('modalNombre').innerText = item.nombre;
+        document.getElementById('modalDescripcion').innerText = item.descripcion;
+        document.getElementById('modalCategoria').innerText = item.categoria;
+        document.getElementById('modalPrecio').innerText = item.precio;
+        
+        // Asignar la función de compra al botón del modal
+        const comprarBtn = document.getElementById('modalBotonComprar');
+        comprarBtn.onclick = () => comprarItem(itemId);
+
+        // Mostrar el modal y la animación
+        const modal = document.getElementById('modalDetalle');
+        const modalContent = document.getElementById('modalDetalleContent');
+    bringModalToFront(modal);
+    modal.classList.add('active');
+        setTimeout(() => {
+            modalContent.classList.remove('scale-95', 'opacity-0');
+            modalContent.classList.add('scale-100', 'opacity-100');
+        }, 10);
+    }
+    
+    // Función para cerrar el modal
+    function cerrarModal(modalId) {
+        console.log("Cerrando modal:", modalId);
+        const modal = document.getElementById(modalId);
+        if (!modal) {
+            console.error(`Modal con ID "${modalId}" no encontrado.`);
+            return;
+        }
+        const modalContent = document.getElementById(`${modalId}Content`);
+        if (!modalContent) {
+            console.error(`Contenido del modal con ID "${modalId}Content" no encontrado.`);
+            return;
+        }
+        modalContent.classList.remove('scale-100', 'opacity-100');
+        modalContent.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+                modal.classList.remove('active');
+                // restore any modal styling changed by bringModalToFront
+                try {
+                    const list = document.querySelectorAll('.modal-overlay');
+                    list.forEach(m => {
+                        m.style.zIndex = '';
+                        m.style.pointerEvents = '';
+                    });
+                } catch (e) { /* ignore */ }
+            }, 300);
+    }
+    
+    // ==================== INVENTARIO ====================
+    function mostrarInventario() {
+        const container = document.getElementById('player-content');
+        container.innerHTML = `
+            <h3 class="text-2xl font-bold mb-6 text-center text-orange-600">Tu Mochila</h3>
+            <div id="listaInventario" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+        `;
+        renderInventario();
+    }
+
+    function renderInventario() {
+        const lista = document.getElementById("listaInventario");
+        lista.innerHTML = "";
+        if (usuarioActivo.inventario.length === 0) {
+            lista.innerHTML = `<p class="text-center text-gray-500 mt-8 text-xl w-full">¡Tu mochila está vacía!</p>`;
+        } else {
+            usuarioActivo.inventario.forEach((p, i) => {
+                const div = document.createElement("div");
+                div.className = "bg-white/60 p-4 rounded-xl shadow-lg border-2 border-white flex flex-col items-center text-center transform transition-transform duration-300 hover:scale-105 cursor-pointer";
+                div.setAttribute('onclick', `mostrarDetalleInventario(${i})`);
+                div.innerHTML = `
+                    <div class="w-full flex justify-center mb-4">
+                        <img src="${p.imagen}" alt="${p.nombre}" class="object-contain" style="width:320px; height:440px;">
+                    </div>
+                    <h3 class="text-lg font-bold text-orange-600">${p.nombre}</h3>
+                    <p class="text-sm text-gray-600 mb-4">Categoría: ${p.categoria}</p>
+                `;
+                lista.appendChild(div);
+            });
+        }
+    }
+
+    // Abre un modal con resumen del usuario: equipo, monedas e inventario
+    function abrirResumenUsuario() {
+        if (!usuarioActivo) {
+            mostrarMensajeFlotante('Inicia sesión para ver el resumen.', 'bg-red-600');
+            return;
+        }
+        // Equipo
+        const resumenEquipo = document.getElementById('resumenEquipo');
+        resumenEquipo.innerHTML = '';
+        const equipo = (usuarioActivo.equipoPokemon && usuarioActivo.equipoPokemon.length) ? usuarioActivo.equipoPokemon.slice(0,6) : [];
+        if (equipo.length === 0) {
+            resumenEquipo.innerHTML = `<p class="text-sm text-gray-500">No tienes Pokémon cargados.</p>`;
+        } else {
+            equipo.forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'flex flex-col items-center bg-white rounded p-2 shadow border border-indigo-100 w-20';
+                div.innerHTML = `<img data-gifkey='${p.gifKey||""}' src='' alt='Pokémon' class='w-20 h-20 object-contain rounded mb-1'><div class='text-xs text-indigo-700' style='height:12px'></div>`;
+                resumenEquipo.appendChild(div);
+            });
+            // Populate GIFs from IDB
+            populateGifElements(resumenEquipo);
+        }
+
+        // Monedas
+        document.getElementById('resumenMonedas').innerText = usuarioActivo.saldo || 0;
+
+        // Inventario (simple listado con nombre y categoría)
+        const resumenInv = document.getElementById('resumenInventario');
+        resumenInv.innerHTML = '';
+        if (!usuarioActivo.inventario || usuarioActivo.inventario.length === 0) {
+            resumenInv.innerHTML = `<p class="text-sm text-gray-500">Inventario vacío.</p>`;
+        } else {
+            usuarioActivo.inventario.forEach((it, idx) => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center gap-3 p-2 bg-white/80 rounded border border-gray-100';
+                row.innerHTML = `<img src='${it.imagen}' alt='${it.nombre}' class='w-12 h-12 object-contain rounded'><div class='flex-1'><div class='font-bold text-sm text-gray-800'>${it.nombre}</div><div class='text-xs text-gray-600'>${it.categoria || ''}</div></div><div><button onclick='mostrarDetalleInventario(${idx})' class='text-xs bg-blue-500 text-white px-2 py-1 rounded'>Ver</button></div>`;
+                resumenInv.appendChild(row);
+            });
+        }
+
+        // Abrir modal
+        const modal = document.getElementById('modalResumenUsuario');
+        const modalContent = document.getElementById('modalResumenUsuarioContent');
+    bringModalToFront(modal);
+    modal.classList.add('active');
+        setTimeout(() => {
+            modalContent.classList.remove('scale-95', 'opacity-0');
+            modalContent.classList.add('scale-100', 'opacity-100');
+        }, 10);
+    }
+
+    // Abrir resumen de cualquier usuario por nombre (no cambia usuarioActivo)
+    function abrirResumenDeUsuario(usuarioNombre) {
+        const target = usuarios.find(u => u.usuario === usuarioNombre);
+        if (!target) {
+            mostrarMensajeFlotante('Usuario no encontrado.', 'bg-red-600');
+            return;
+        }
+        // Renderizar en el mismo modal, pero usando los datos de 'target'
+        const resumenEquipo = document.getElementById('resumenEquipo');
+        resumenEquipo.innerHTML = '';
+        const equipo = (target.equipoPokemon && target.equipoPokemon.length) ? target.equipoPokemon.slice(0,6) : [];
+        if (equipo.length === 0) {
+            resumenEquipo.innerHTML = `<p class="text-sm text-gray-500">No tiene Pokémon cargados.</p>`;
+        } else {
+            equipo.forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'flex flex-col items-center bg-white rounded p-2 shadow border border-indigo-100 w-20';
+                div.innerHTML = `<img data-gifkey='${p.gifKey||""}' src='' alt='Pokémon' class='w-20 h-20 object-contain rounded mb-1'><div class='text-xs text-indigo-700' style='height:12px'></div>`;
+                resumenEquipo.appendChild(div);
+            });
+            populateGifElements(resumenEquipo);
+        }
+
+        // Monedas
+        document.getElementById('resumenMonedas').innerText = target.saldo || 0;
+
+        // Inventario
+        const resumenInv = document.getElementById('resumenInventario');
+        resumenInv.innerHTML = '';
+        if (!target.inventario || target.inventario.length === 0) {
+            resumenInv.innerHTML = `<p class="text-sm text-gray-500">Inventario vacío.</p>`;
+        } else {
+            target.inventario.forEach((it, idx) => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center gap-3 p-2 bg-white/80 rounded border border-gray-100';
+                row.innerHTML = `<img src='${it.imagen}' alt='${it.nombre}' class='w-12 h-12 object-contain rounded'><div class='flex-1'><div class='font-bold text-sm text-gray-800'>${it.nombre}</div><div class='text-xs text-gray-600'>${it.categoria || ''}</div></div>`;
+                resumenInv.appendChild(row);
+            });
+        }
+
+        // Abrir modal
+        const modal = document.getElementById('modalResumenUsuario');
+        const modalContent = document.getElementById('modalResumenUsuarioContent');
+    bringModalToFront(modal);
+    modal.classList.add('active');
+        setTimeout(() => {
+            modalContent.classList.remove('scale-95', 'opacity-0');
+            modalContent.classList.add('scale-100', 'opacity-100');
+        }, 10);
+    }
+
+    // Abre un modal con la lista de entrenadores y permite ver su resumen
+    function abrirListaUsuarios() {
+        const lista = document.getElementById('listaEntrenadores');
+        if (!lista) return;
+        lista.innerHTML = '';
+        usuarios.forEach(u => {
+            const row = document.createElement('div');
+            row.className = 'flex items-center justify-between p-2 bg-white/80 rounded border border-gray-100';
+            // build left side
+            const left = document.createElement('div');
+            left.className = 'flex items-center gap-3';
+            const img = document.createElement('img'); img.src = u.fotoPerfil||''; img.className = 'w-10 h-10 object-cover rounded-full border'; img.onerror = function(){ this.src='https://placehold.co/40x40/eee/aaa?text=?'; };
+            const txt = document.createElement('div');
+            const title = document.createElement('div'); title.className = 'font-bold text-sm'; title.textContent = u.nombre || u.usuario;
+            const sub = document.createElement('div'); sub.className = 'text-xs text-gray-600'; sub.textContent = u.usuario;
+            txt.appendChild(title); txt.appendChild(sub);
+            left.appendChild(img); left.appendChild(txt);
+
+            const right = document.createElement('div');
+            const btn = document.createElement('button'); btn.className = 'bg-indigo-500 text-white px-3 py-1 rounded text-sm'; btn.textContent = 'Ver resumen';
+            btn.addEventListener('click', () => abrirResumenDeUsuario(u.usuario));
+            right.appendChild(btn);
+
+            row.appendChild(left);
+            row.appendChild(right);
+            lista.appendChild(row);
+        });
+        const modal = document.getElementById('modalListadoUsuarios');
+        const modalContent = document.getElementById('modalListadoUsuariosContent');
+    bringModalToFront(modal);
+    modal.classList.add('active');
+        setTimeout(() => {
+            modalContent.classList.remove('scale-95', 'opacity-0');
+            modalContent.classList.add('scale-100', 'opacity-100');
+        }, 10);
+    }
+    
+    // Nueva función para mostrar el modal de detalle del inventario
+    function mostrarDetalleInventario(index) {
+        const item = usuarioActivo.inventario[index];
+        if (!item) return;
+
+        // Llenar el modal con los datos del producto
+        document.getElementById('modalInventarioImagen').src = item.imagen;
+        document.getElementById('modalInventarioNombre').innerText = item.nombre;
+        document.getElementById('modalInventarioDescripcion').innerText = item.descripcion;
+        document.getElementById('modalInventarioCategoria').innerText = item.categoria;
+
+        // Asignar la función de uso al botón del modal
+        const usarBtn = document.getElementById('modalInventarioBotonUsar');
+        usarBtn.onclick = () => usarItem(index);
+
+        // Mostrar el modal y la animación
+        const modal = document.getElementById('modalInventario');
+        const modalContent = document.getElementById('modalInventarioContent');
+    bringModalToFront(modal);
+    modal.classList.add('active');
+        setTimeout(() => {
+            modalContent.classList.remove('scale-95', 'opacity-0');
+            modalContent.classList.add('scale-100', 'opacity-100');
+        }, 10);
+    }
+    
+    function usarItem(index) {
+        const item = usuarioActivo.inventario[index];
+        if (!item) return;
+
+        // Animar con estrellas antes de usar
+        animacionEstrellas();
+
+        // Efecto de animación temporal
+        const animationDiv = document.createElement('div');
+        animationDiv.className = `fixed inset-0 flex items-center justify-center text-8xl z-50 pointer-events-none`;
+        let emoji = '✨';
+        animationDiv.innerHTML = emoji;
+        document.body.appendChild(animationDiv);
+
+        setTimeout(() => {
+            animationDiv.remove();
+            const [usedItem] = usuarioActivo.inventario.splice(index, 1);
+            usuarioActivo.historialUsos.push({ item: usedItem.nombre, fecha: new Date().toLocaleString() });
+            renderInventario();
+            guardarDatos();
+            mostrarMensajeFlotante(`Usaste: ${usedItem.nombre}`, 'bg-blue-600');
+            cerrarModal('modalInventario'); // Cerrar el modal al usar el item
+        }, 600);
+    }
+    
+    // ==================== HISTORIAL DE JUGADOR ====================
+    function mostrarHistorial() {
+        const container = document.getElementById('player-content');
+        container.innerHTML = `
+            <h3 class="text-2xl font-bold mb-6 text-center text-orange-600">Historial de Aventura</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <section class="bg-white/60 p-6 rounded-2xl shadow-inner border-2 border-white">
+                    <h4 class="text-xl font-bold mb-4 text-orange-600">Compras</h4>
+                    <ul id="historialCompras" class="list-disc list-inside text-gray-700"></ul>
+                </section>
+                <section class="bg-white/60 p-6 rounded-2xl shadow-inner border-2 border-white">
+                    <h4 class="text-xl font-bold mb-4 text-orange-600">Uso de Ítems</h4>
+                    <ul id="historialUsos" class="list-disc list-inside text-gray-700"></ul>
+                </section>
+            </div>
+        `;
+        renderHistorial();
+    }
+    
+    function renderHistorial() {
+        const comprasList = document.getElementById('historialCompras');
+        const usosList = document.getElementById('historialUsos');
+        comprasList.innerHTML = '';
+        usosList.innerHTML = '';
+        
+        if(usuarioActivo.historialCompras.length === 0 && usuarioActivo.historialUsos.length === 0){
+             document.getElementById('player-content').innerHTML = `<p class="text-center text-gray-500 mt-8 text-xl w-full">¡Tu historial está vacío!</p>`;
+             return;
+        }
+
+        usuarioActivo.historialCompras.forEach(h => {
+            const li = document.createElement('li');
+            li.textContent = `${h.item} - ${h.fecha}`;
+            comprasList.appendChild(li);
+        });
+        
+        usuarioActivo.historialUsos.forEach(h => {
+            const li = document.createElement('li');
+            li.textContent = `${h.item} - ${h.fecha}`;
+            usosList.appendChild(li);
+        });
+    }
+
+    // ==================== ADMIN ====================
+    function actualizarSelectorUsuarios() {
+        // Selector para agregar monedas
+        const selAddCoins = document.getElementById("selectorUsuario");
+        selAddCoins.innerHTML = `<option value="">-- Elige un jugador --</option>`;
+        
+        // Selector para ver historial
+        const selHistorial = document.getElementById("selectorHistorial");
+        selHistorial.innerHTML = `<option value="">-- Elige un jugador --</option>`;
+
+        // Selector para agregar monedas de ruleta
+        const selRuleta = document.getElementById("selectorUsuarioRuleta");
+        if (selRuleta) {
+            selRuleta.innerHTML = `<option value="">-- Elige un jugador --</option>`;
+            usuarios.forEach(u => {
+                if (!u.esAdmin) {
+                    const o = document.createElement("option");
+                    o.value = u.usuario;
+                    o.textContent = u.nombre;
+                    selRuleta.appendChild(o);
+                }
+            });
+        }
+
+        usuarios.forEach(u => { 
+            if (!u.esAdmin) {
+                // Para agregar monedas
+                const oAddCoins = document.createElement("option");
+                oAddCoins.value = u.usuario;
+                oAddCoins.textContent = u.nombre;
+                selAddCoins.appendChild(oAddCoins);
+
+                // Para ver historial
+                const oHistorial = document.createElement("option");
+                oHistorial.value = u.usuario;
+                oHistorial.textContent = u.nombre;
+                selHistorial.appendChild(oHistorial);
+            }
+        });
+    }
+
+    document.getElementById("addCoinsForm").addEventListener("submit", function(e) {
+        e.preventDefault();
+        const usuario = document.getElementById("selectorUsuario").value;
+        const cantidad = parseInt(document.getElementById("cantidadMonedas").value);
+        const user = usuarios.find(u => u.usuario === usuario);
+
+        if (!user || isNaN(cantidad) || cantidad <= 0) {
+            mostrarMensajeFlotante("Selecciona un usuario y una cantidad válida.", 'bg-red-600');
+            return;
+        }
+
+        user.saldo += cantidad;
+        guardarDatos();
+        mostrarMensajeFlotante(`${cantidad} monedas agregadas a ${user.nombre}`, 'bg-green-600');
+        document.getElementById("cantidadMonedas").value = "";
+    });
+
+    document.getElementById("addRuletaCoinsForm").addEventListener("submit", function(e) {
+        e.preventDefault();
+        const usuario = document.getElementById("selectorUsuarioRuleta").value;
+        const cantidad = parseInt(document.getElementById("cantidadMonedasRuleta").value);
+        const user = usuarios.find(u => u.usuario === usuario);
+
+        if (!user || isNaN(cantidad) || cantidad <= 0) {
+            mostrarMensajeFlotante("Selecciona un usuario y una cantidad válida.", 'bg-red-600');
+            return;
+        }
+
+        user.monedasRuleta = (user.monedasRuleta ?? 0) + cantidad;
+        guardarDatos();
+        mostrarMensajeFlotante(`${cantidad} monedas de ruleta agregadas a ${user.nombre}`, 'bg-yellow-600');
+        document.getElementById("cantidadMonedasRuleta").value = "";
+    });
+
+    document.getElementById("addProductForm").addEventListener("submit", function(e) {
+        e.preventDefault();
+        const nombre = document.getElementById("nuevoNombre").value.trim();
+        const descripcion = document.getElementById("nuevaDescripcion").value.trim(); // <-- Agregado
+        const precio = parseInt(document.getElementById("nuevoPrecio").value);
+        const imagenFile = document.getElementById("nuevaImagenFile").files[0];
+        const categoria = document.getElementById("nuevaCategoria").value;
+
+        if (!nombre || !descripcion || isNaN(precio) || precio <= 0 || !imagenFile || !categoria) { // <-- Valida descripción
+            mostrarMensajeFlotante("Completa todos los campos.", 'bg-red-600');
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const newId = `item${Date.now()}`;
+            const prod = { id: newId, nombre, descripcion, precio, imagen: e.target.result, categoria }; // <-- Incluye descripción
+            productos.push(prod);
+            guardarDatos();
+            renderProductosAdmin();
+            mostrarMensajeFlotante("Producto agregado con éxito.", 'bg-green-600');
+
+            // Limpiar campos
+            document.getElementById("nuevoNombre").value = "";
+            document.getElementById("nuevaDescripcion").value = ""; // <-- Limpia descripción
+            document.getElementById("nuevoPrecio").value = "";
+            document.getElementById("nuevaImagenFile").value = "";
+            document.getElementById("nuevaCategoria").value = "";
+            document.getElementById("previewContainer").classList.add('hidden');
+        };
+        reader.readAsDataURL(imagenFile);
+    });
+    
+    // Vista previa de la imagen al seleccionar un archivo
+    document.getElementById("nuevaImagenFile").addEventListener("change", function() {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById("previewImg").src = e.target.result;
+                document.getElementById("previewContainer").classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        } else {
+            document.getElementById("previewContainer").classList.add('hidden');
+        }
+    });
+    
+    function eliminarProducto(productId) {
+        const productIndex = productos.findIndex(p => p.id === productId);
+        if (productIndex !== -1) {
+            const removedProduct = productos.splice(productIndex, 1)[0];
+            guardarDatos();
+            renderProductosAdmin();
+            mostrarMensajeFlotante(`Producto "${removedProduct.nombre}" eliminado.`, 'bg-red-600');
+        }
+    }
+
+    function renderProductosAdmin() {
+        const cont = document.getElementById("listaProductosAdmin");
+        cont.innerHTML = "";
+        productos.forEach(p => {
+            const div = document.createElement("div");
+            div.className = "bg-white/60 p-4 rounded-xl shadow-lg border-2 border-white flex flex-col items-center text-center transform transition-transform duration-300 hover:scale-105";
+            div.innerHTML = `
+                <div class="w-full h-48 bg-white/70 rounded-xl mb-4 overflow-hidden border-2 border-white">
+                    <img src="${p.imagen}" alt="${p.nombre}" class="w-full h-full object-cover">
+                </div>
+                <h3 class="text-lg font-bold text-orange-600">${p.nombre}</h3>
+                <p class="text-sm text-gray-600 mb-2">Costo: ${p.precio}</p>
+                <p class="text-sm font-semibold text-gray-800 mb-2">Categoría: ${p.categoria}</p>
+                <div class="flex gap-2 w-full">
+                    <button onclick="abrirModalEditarProducto('${p.id}')" class="flex-1 bg-blue-500 text-white font-bold py-2 rounded-xl hover:bg-blue-600 transition-colors shadow-md border-2 border-blue-700">
+                        <i class="fas fa-edit mr-1"></i> Editar
+                    </button>
+                    <button onclick="eliminarProducto('${p.id}')" class="flex-1 bg-red-500 text-white font-bold py-2 rounded-xl hover:bg-red-600 transition-colors shadow-md border-2 border-red-700">
+                        <i class="fas fa-trash-alt mr-1"></i> Eliminar
+                    </button>
+                    ${(usuarioActivo && usuarioActivo.usuario === 'odin') ? `<button onclick="toggleOcultarProducto('${p.id}')" class="flex-1 ${p.oculto ? 'bg-gray-400' : 'bg-yellow-500'} text-white font-bold py-2 rounded-xl hover:bg-yellow-600 transition-colors shadow-md border-2 border-yellow-700">${p.oculto ? 'Mostrar' : 'Ocultar'}</button>` : ''}
+                </div>
+                ${p.oculto ? '<span class="text-xs text-red-500 font-bold mt-2">Oculto en tienda</span>' : ''}
+            `;
+            cont.appendChild(div);
+        });
+    // ...existing code...
+}
+
+// Asegura que el modal dado quede por encima ajustando z-index del resto
+function bringModalToFront(modal) {
+    try {
+        const list = document.querySelectorAll('.modal-overlay');
+        list.forEach(m => {
+            // restablecer al valor base
+            m.style.zIndex = 50;
+        });
+        const el = (typeof modal === 'string') ? document.getElementById(modal) : modal;
+        if (el) el.style.zIndex = 9999;
+    } catch (e) { console.warn('bringModalToFront error', e); }
+}
+
+// Permite a Odin ocultar o mostrar productos de la tienda
+function toggleOcultarProducto(productId) {
+    const producto = productos.find(p => p.id === productId);
+    if (!producto) return;
+    producto.oculto = !producto.oculto;
+    guardarDatos();
+    renderProductosAdmin();
+    if (typeof renderTienda === 'function') renderTienda();
+    if (producto.oculto) {
+        mostrarMensajeFlotante('¡Producto ocultado con éxito!', 'bg-gray-600');
+    } else {
+        mostrarMensajeFlotante('Producto visible en la tienda.', 'bg-green-600');
+    // ...existing code...
+}
+    }
+
+    // 3. Lógica para abrir el modal y cargar los datos del producto
+    let productoEditandoId = null;
+    function abrirModalEditarProducto(productId) {
+        const producto = productos.find(p => p.id === productId);
+        if (!producto) return;
+        productoEditandoId = productId;
+        document.getElementById("editarNombre").value = producto.nombre;
+        document.getElementById("editarDescripcion").value = producto.descripcion || "";
+        document.getElementById("editarPrecio").value = producto.precio;
+        document.getElementById("editarCategoria").value = producto.categoria;
+        document.getElementById("editarImagenFile").value = "";
+        document.getElementById("editarPreviewContainer").classList.add('hidden');
+        document.getElementById("modalEditarProducto").classList.add('active');
+        setTimeout(() => {
+            document.getElementById("modalEditarProductoContent").classList.remove('scale-95', 'opacity-0');
+            document.getElementById("modalEditarProductoContent").classList.add('scale-100', 'opacity-100');
+        }, 10);
+    }
+
+    // 4. Vista previa de la imagen al editar
+    document.getElementById("editarImagenFile").addEventListener("change", function() {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById("editarPreviewImg").src = e.target.result;
+                document.getElementById("editarPreviewContainer").classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        } else {
+            document.getElementById("editarPreviewContainer").classList.add('hidden');
+        }
+    });
+
+    // 5. Guardar cambios al editar producto
+    document.getElementById("formEditarProducto").addEventListener("submit", function(e) {
+        e.preventDefault();
+        const nombre = document.getElementById("editarNombre").value.trim();
+        const descripcion = document.getElementById("editarDescripcion").value.trim();
+        const precio = parseInt(document.getElementById("editarPrecio").value);
+        const categoria = document.getElementById("editarCategoria").value.trim();
+        const imagenFile = document.getElementById("editarImagenFile").files[0];
+
+        if (!nombre || !descripcion || isNaN(precio) || precio <= 0 || !categoria) {
+            mostrarMensajeFlotante("Completa todos los campos obligatorios.", 'bg-red-600');
+            return;
+        }
+
+        const producto = productos.find(p => p.id === productoEditandoId);
+        if (!producto) return;
+
+        producto.nombre = nombre;
+        producto.descripcion = descripcion;
+        producto.precio = precio;
+        producto.categoria = categoria;
+
+        if (imagenFile) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                producto.imagen = e.target.result;
+                guardarDatos();
+                renderProductosAdmin();
+                mostrarMensajeFlotante("Producto editado con éxito.", 'bg-green-600');
+                cerrarModal('modalEditarProducto');
+            };
+            reader.readAsDataURL(imagenFile);
+        } else {
+            guardarDatos();
+            renderProductosAdmin();
+            mostrarMensajeFlotante("Producto editado con éxito.", 'bg-green-600');
+            cerrarModal('modalEditarProducto');
+        }
+    });
+
+    // === LÓGICA DE LA RULETA ===
+
+// Premios de la ruleta: por defecto todos los productos
+let premiosRuleta = JSON.parse(localStorage.getItem("premiosRuleta")) || productos.map(p => p.id);
+
+function mostrarRuleta() {
+    const modal = document.getElementById('modalRuleta');
+    const modalContent = document.getElementById('modalRuletaContent');
+    bringModalToFront(modal);
+    modal.classList.add('active');
+    setTimeout(() => {
+        modalContent.classList.remove('scale-95', 'opacity-0');
+        modalContent.classList.add('scale-100', 'opacity-100');
+    }, 10);
+    dibujarRuleta();
+    document.getElementById('premioRuleta').innerText = "";
+    // --- FIX: Siempre habilitar el botón y resetear ruletaGirando al abrir la ruleta ---
+    if (document.getElementById('girarRuletaBtn')) {
+        document.getElementById('girarRuletaBtn').disabled = false;
+    }
+    ruletaGirando = false;
+}
+
+let ruletaGirando = false;
+let ruletaAngulo = 0;
+let ruletaPremioIndex = 0;
+
+function dibujarRuleta(angulo = 0, highlightIndex = null) {
+
+    const canvas = document.getElementById('canvasRuleta');
+    const ctx = canvas.getContext('2d');
+    const premios = premiosRuleta.map(id => productos.find(p => p.id === id)).filter(Boolean);
+    const num = premios.length;
+    // Degradados para los segmentos
+    const colorPairs = [
+        ["#f7971e", "#ffd200"],
+        ["#21d4fd", "#b721ff"],
+        ["#f857a6", "#ff5858"],
+        ["#43cea2", "#185a9d"],
+        ["#ff9966", "#ff5e62"],
+        ["#7f53ac", "#657ced"],
+        ["#f7971e", "#ffd200"],
+        ["#21d4fd", "#b721ff"],
+        ["#f857a6", "#ff5858"],
+        ["#43cea2", "#185a9d"]
+    ];
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Sombra general para la ruleta
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(200, 200, 185, 0, 2 * Math.PI);
+    ctx.shadowColor = "#b721ff88";
+    ctx.shadowBlur = 30;
+    ctx.fillStyle = "#fff";
+    ctx.fill();
+    ctx.restore();
+
+    // Dibuja los segmentos con degradado y borde
+    for(let i=0; i<num; i++) {
+        ctx.save();
+        ctx.translate(200,200);
+        ctx.rotate(angulo + (i*2*Math.PI/num));
+        ctx.beginPath();
+        ctx.moveTo(0,0);
+        ctx.arc(0,0,180, 0, 2*Math.PI/num);
+        ctx.closePath();
+        // Degradado radial
+        let grad = ctx.createRadialGradient(0,0,80,0,0,180);
+        grad.addColorStop(0, colorPairs[i%colorPairs.length][0]);
+        grad.addColorStop(1, colorPairs[i%colorPairs.length][1]);
+        ctx.fillStyle = (highlightIndex === i)
+            ? "#fffbe6"
+            : grad;
+        ctx.shadowColor = (highlightIndex === i) ? "#fbc02d" : "#0000";
+        ctx.shadowBlur = (highlightIndex === i) ? 40 : 0;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 5;
+        ctx.stroke();
+
+        // Dibuja icono del producto si tiene imagen
+        if (premios[i] && premios[i].imagen) {
+            let img = new window.Image();
+            img.src = premios[i].imagen;
+            // Dibuja la imagen en el segmento (async)
+            img.onload = () => {
+                ctx.save();
+                ctx.rotate(Math.PI/num);
+                ctx.beginPath();
+                ctx.arc(150, 0, 32, 0, 2 * Math.PI);
+                ctx.closePath();
+                ctx.clip();
+                ctx.drawImage(img, 120, -32, 64, 64);
+                ctx.restore();
+            };
+        }
+
+        // Texto del nombre
+        ctx.rotate(Math.PI/num);
+        ctx.textAlign = "right";
+        ctx.fillStyle = highlightIndex === i ? "#b721ff" : "#222";
+        ctx.font = "bold 18px Roboto";
+        ctx.save();
+        ctx.rotate(-Math.PI/num);
+        ctx.shadowColor = highlightIndex === i ? "#ffd200" : "#fff";
+        ctx.shadowBlur = highlightIndex === i ? 10 : 2;
+        ctx.fillText(premios[i].nombre, 170, 10);
+        ctx.restore();
+        ctx.restore();
+    }
+
+    // Borde exterior decorativo
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(200, 200, 182, 0, 2 * Math.PI);
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = "#b721ff";
+    ctx.shadowColor = "#ffd200";
+    ctx.shadowBlur = 12;
+    ctx.stroke();
+    ctx.restore();
+
+    // Dibuja el puntero (flecha arriba, centrada y con borde)
+    ctx.save();
+    ctx.translate(200, 30);
+    ctx.beginPath();
+    ctx.moveTo(0, -18);
+    ctx.lineTo(-18, 18);
+    ctx.lineTo(18, 18);
+    ctx.closePath();
+    ctx.fillStyle = "#f44336";
+    ctx.strokeStyle = "#222";
+    ctx.lineWidth = 4;
+    ctx.shadowColor = "#fff";
+    ctx.shadowBlur = 10;
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    // Dibuja Pokéball en el centro (SVG rasterizado)
+    ctx.save();
+    ctx.translate(200,200);
+    // Pokéball base
+    ctx.beginPath();
+    ctx.arc(0,0,60,0,Math.PI,true);
+    ctx.fillStyle = "#f44336";
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(0,0,60,Math.PI,2*Math.PI,true);
+    ctx.fillStyle = "#fff";
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(0,0,60,0,2*Math.PI);
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = "#222";
+    ctx.stroke();
+    // Línea negra central
+    ctx.beginPath();
+    ctx.moveTo(-60,0);
+    ctx.lineTo(60,0);
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = "#222";
+    ctx.stroke();
+    // Círculo central
+    ctx.beginPath();
+    ctx.arc(0,0,20,0,2*Math.PI);
+    ctx.fillStyle = "#fff";
+    ctx.fill();
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = "#222";
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0,0,10,0,2*Math.PI);
+    ctx.fillStyle = "#eee";
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "#222";
+    ctx.stroke();
+    ctx.restore();
+}
+
+document.getElementById('girarRuletaBtn').onclick = function() {
+    if (ruletaGirando) return;
+    if ((usuarioActivo.monedasRuleta ?? 0) <= 0) {
+        mostrarMensajeFlotante("No tienes monedas de ruleta.", 'bg-yellow-600');
+        return;
+    }
+    const audioRuleta = document.getElementById('audioRuleta');
+    const audioTick = document.getElementById('audioTick');
+    const audioWin = document.getElementById('audioWin');
+    audioRuleta.currentTime = 0;
+    audioRuleta.play();
+
+    const premios = premiosRuleta.map(id => productos.find(p => p.id === id)).filter(Boolean);
+    if (premios.length === 0) {
+        document.getElementById('premioRuleta').innerText = "No hay premios configurados.";
+        return;
+    }
+    ruletaGirando = true;
+    if (document.getElementById('girarRuletaBtn')) {
+        document.getElementById('girarRuletaBtn').disabled = true;
+    }
+    document.getElementById('premioRuleta').innerText = "";
+    usuarioActivo.monedasRuleta--;
+    document.getElementById("monedasRuleta").innerText = usuarioActivo.monedasRuleta;
+    guardarDatos();
+
+    ruletaPremioIndex = Math.floor(Math.random() * premios.length);
+    const vueltas = 7 + Math.random() * 2;
+    const anguloPorPremio = 2 * Math.PI / premios.length;
+    const anguloFinal = (2 * Math.PI * vueltas) - (ruletaPremioIndex * anguloPorPremio) - anguloPorPremio/2;
+    let start = null;
+    let duracion = 4200; // ms
+    let lastTick = -1;
+    function animarRuleta(timestamp) {
+        if (!start) start = timestamp;
+        let progreso = (timestamp - start) / duracion;
+        if (progreso > 1) progreso = 1;
+        // Ease out bounce
+        let ease = progreso < 0.8
+            ? 1 - Math.pow(1 - progreso, 3)
+            : 1 - Math.pow(1 - progreso, 1.5) * Math.cos(progreso * 12);
+        ruletaAngulo = ease * anguloFinal;
+        // Efecto de tick en cada segmento
+        let currentTick = Math.floor((ruletaAngulo / (2 * Math.PI)) * premios.length) % premios.length;
+        if (currentTick !== lastTick && progreso < 1) {
+            audioTick.currentTime = 0;
+            audioTick.play();
+            lastTick = currentTick;
+        }
+        dibujarRuleta(ruletaAngulo);
+        if (progreso < 1) {
+            requestAnimationFrame(animarRuleta);
+        } else {
+            audioRuleta.pause();
+            dibujarRuleta(ruletaAngulo, ruletaPremioIndex);
+            setTimeout(() => {
+                audioWin.currentTime = 0;
+                audioWin.play();
+                const ganador = premios[ruletaPremioIndex];
+                mostrarCartaGanadoraRuleta(ganador);
+                usuarioActivo.inventario.push(ganador);
+                usuarioActivo.historialCompras.push({ item: ganador.nombre + " (Ruleta)", fecha: new Date().toLocaleString() });
+                guardarDatos();
+                mostrarMensajeFlotante(`¡Ganaste ${ganador.nombre} en la ruleta!`, 'bg-purple-600');
+                const animDiv = document.getElementById('ruleta-premio-anim');
+                document.getElementById('ruleta-premio-img').src = ganador.imagen;
+                document.getElementById('ruleta-premio-nombre').innerText = ganador.nombre;
+                animDiv.style.display = 'flex';
+                setTimeout(() => {
+                    animDiv.style.display = 'none';
+                    ruletaGirando = false;
+                    if (document.getElementById('girarRuletaBtn')) {
+                        document.getElementById('girarRuletaBtn').disabled = false;
+                    }
+                }, 2200);
+            }, 800);
+        }
+    }
+    requestAnimationFrame(animarRuleta);
+};
+
+function mostrarPanelRuletaAdmin() {
+    renderAdminRuletaPanel();
+    const modal = document.getElementById('modalAdminRuleta');
+    const modalContent = document.getElementById('modalAdminRuletaContent');
+    bringModalToFront(modal);
+    modal.classList.add('active');
+    setTimeout(() => {
+        modalContent.classList.remove('scale-95', 'opacity-0');
+        modalContent.classList.add('scale-100', 'opacity-100');
+    }, 10);
+}
+
+function renderAdminRuletaPanel() {
+    const cont = document.getElementById("adminRuletaPremiosPanel");
+    cont.innerHTML = `
+        <div class="mb-4">
+            <select id="selectAgregarPremio" class="bg-white/70 text-gray-900 p-2 rounded-xl border-2 border-orange-200">
+                <option value="">-- Agregar producto de la tienda --</option>
+                ${productos.filter(p=>!premiosRuleta.includes(p.id)).map(p=>`<option value="${p.id}">${p.nombre}</option>`).join("")}
+            </select>
+            <button onclick="agregarPremioRuleta()" class="ml-2 bg-green-500 text-white px-3 py-1 rounded-xl hover:bg-green-600">Agregar</button>
+        </div>
+        <ul>
+            ${premiosRuleta.map(id=>{
+                const prod = productos.find(p=>p.id===id);
+                if(!prod) return '';
+                return `<li class="flex items-center mb-2">
+                    <span class="flex-1">${prod.nombre}</span>
+                    <button onclick="eliminarPremioRuleta('${id}')" class="bg-red-500 text-white px-2 py-1 rounded-xl hover:bg-red-600 ml-2">Eliminar</button>
+                </li>`;
+            }).join("")}
+        </ul>
+    `;
+}
+
+function agregarPremioRuleta() {
+    const id = document.getElementById("selectAgregarPremio").value;
+    if(id && !premiosRuleta.includes(id)) {
+        premiosRuleta.push(id);
+        localStorage.setItem("premiosRuleta", JSON.stringify(premiosRuleta));
+        renderAdminRuletaPanel();
+        dibujarRuleta();
+    }
+}
+function eliminarPremioRuleta(id) {
+    premiosRuleta = premiosRuleta.filter(pid=>pid!==id);
+    localStorage.setItem("premiosRuleta", JSON.stringify(premiosRuleta));
+    renderAdminRuletaPanel();
+    dibujarRuleta();
+}
+// ==================== LÓGICA DEL MODAL DE LÍDERES DE GIMNASIO ====================
+
+function abrirModalLideresGym() {
+    const modal = document.getElementById('modalAdminLideresGym');
+    const modalContent = document.getElementById('modalAdminLideresGymContent');
+    modal.classList.add('active');
+    setTimeout(() => {
+        modalContent.classList.remove('scale-95', 'opacity-0');
+        modalContent.classList.add('scale-100', 'opacity-100');
+    }, 10);
+    // Mostrar u ocultar el formulario según el usuario
+    const puedeEditar = (usuarioActivo && usuarioActivo.esAdmin) || (usuarioActivo && usuarioActivo.usuario === 'odin');
+    document.getElementById('seccionFormLideresGym').style.display = puedeEditar ? '' : 'none';
+    renderLideresGym();
+}
+
+function renderLideresGym() {
+    const cont = document.getElementById("listaLideresGym");
+    cont.innerHTML = "";
+    if (lideresGym.length === 0) {
+        cont.innerHTML = `<p class="text-center text-gray-500 col-span-3">No hay líderes agregados aún.</p>`;
+        return;
+    }
+    const esOdin = usuarioActivo && usuarioActivo.usuario === 'odin';
+    lideresGym.forEach((l, idx) => {
+        const div = document.createElement("div");
+        div.className = "gym-leader-card";
+        let botones = "";
+        if ((usuarioActivo && usuarioActivo.esAdmin) || (usuarioActivo && usuarioActivo.usuario === "odin")) {
+            botones = `
+                <div class='flex gap-2 justify-center mt-4'>
+                    <button onclick=\"editarLiderGym(${idx})\" class=\"bg-blue-500 text-white px-4 py-2 rounded-xl hover:bg-blue-600 font-bold shadow border-2 border-blue-700\">Editar</button>
+                    <button onclick=\"eliminarLiderGym(${idx})\" class=\"bg-red-500 text-white px-4 py-2 rounded-xl hover:bg-red-600 font-bold shadow border-2 border-red-700\">Eliminar</button>
+                </div>
+            `;
+        }
+        div.innerHTML = `
+            <img src="${l.imagen}" alt="${l.nombre}" class="gym-leader-img">
+            <div class="gym-leader-name">${l.nombre}</div>
+            <div class="gym-leader-specialty">${l.especialidad}</div>
+            <div class="gym-leader-level">Nv. ${l.nivel}</div>
+            ${l.equipo && Array.isArray(l.equipo) && l.equipo.length ? `
+            <div class='mb-2 flex flex-col items-center'>
+                <span class='font-extrabold text-pink-700 text-lg mb-2 tracking-wide'>Equipo Pokémon:</span>
+                <div class='flex flex-wrap justify-center gap-4'>
+                    ${l.equipo.map(p=>`
+                        <span class="inline-flex items-center gap-2 bg-white/95 border-2 border-pink-200 rounded-full px-5 py-2 text-base font-bold text-pink-700 shadow-md">
+                            <img data-gifkey='${p.gifKey||""}' src='' alt="Pokémon" class="w-14 h-14 object-contain rounded-full border border-pink-100 bg-white">
+                        </span>
+                    `).join('')}
+                </div>
+            </div>
+            ` : ''}
+            ${botones}
+        `;
+        cont.appendChild(div);
+    });
+}
+
+function guardarLiderGym() {
+    const nombre = document.getElementById('nombreLider').value.trim();
+    const especialidad = document.getElementById('especialidadLider').value.trim();
+    const nivel = parseInt(document.getElementById('nivelLider').value);
+    const imagenFile = document.getElementById('imagenLiderFile').files[0];
+    const liderId = document.getElementById('liderId').value;
+
+    if (!nombre || !especialidad || isNaN(nivel)) {
+        mostrarMensajeFlotante("Por favor, completa todos los campos.", 'bg-red-600');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const imagenUrl = e.target.result;
+        const newLider = { nombre, especialidad, nivel, imagen: imagenUrl, id: liderId || `lider${Date.now()}` };
+        
+        if (liderId) {
+            const index = lideresGym.findIndex(l => l.id === liderId);
+            if (index !== -1) {
+                lideresGym[index] = newLider;
+            }
+        } else {
+            lideresGym.push(newLider);
+        }
+        guardarDatos();
+        renderLideresGym();
+        mostrarMensajeFlotante("Líder de gimnasio guardado.", 'bg-green-600');
+        cerrarModal('modalAdminLideresGym');
+    };
+
+    if (imagenFile) {
+        reader.readAsDataURL(imagenFile);
+    } else {
+        // Handle case where image is not changed on edit
+        const existingLider = lideresGym.find(l => l.id === liderId);
+        if (existingLider) {
+            const newLider = { nombre, especialidad, nivel, imagen: existingLider.imagen, id: liderId };
+            const index = lideresGym.findIndex(l => l.id === liderId);
+            lideresGym[index] = newLider;
+        } else {
+            // For new leader without image, use a placeholder
+            const newLider = { nombre, especialidad, nivel, imagen: 'https://placehold.co/100x100/F472B6/FFFFFF?text=Líder', id: `lider${Date.now()}` };
+            lideresGym.push(newLider);
+        }
+        guardarDatos();
+        renderLideresGym();
+        mostrarMensajeFlotante("Líder de gimnasio guardado.", 'bg-green-600');
+        cerrarModal('modalAdminLideresGym');
+    }
+}
+
+function editarLiderGym(index) {
+    const lider = lideresGym[index];
+    if (!lider) return;
+    document.getElementById('liderId').value = lider.id;
+    document.getElementById('nombreLider').value = lider.nombre;
+    document.getElementById('especialidadLider').value = lider.especialidad;
+    document.getElementById('nivelLider').value = lider.nivel;
+    document.getElementById('previewLiderImg').src = lider.imagen;
+    document.getElementById('previewLiderContainer').classList.remove('hidden');
+    abrirModalLideresGym(); // Re-use the open modal function
+}
+
+function eliminarLiderGym(index) {
+    lideresGym.splice(index, 1);
+    guardarDatos();
+    renderLideresGym();
+    mostrarMensajeFlotante("Líder de gimnasio eliminado.", 'bg-red-600');
+}
+// ==================== NUEVAS FUNCIONES PARA CARGAR PARTIDA ====================
+function leerMainFile() {
+    const input = document.getElementById('inputMainFile');
+    if (!input.files.length) {
+        mostrarMensajeFlotante("Selecciona un archivo de partida .main", 'bg-yellow-600');
+        return;
+    }
+    const file = input.files[0];
+    // Validar tipo MIME (solo texto)
+    if (!file.type.startsWith('text') && file.type !== '' && file.type !== 'application/json') {
+        mostrarMensajeFlotante("El archivo debe ser de texto plano (.txt, .json, .main)", 'bg-red-600');
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        let data;
+        try {
+            // Intenta parsear como JSON
+            data = JSON.parse(e.target.result);
+        } catch {
+            try {
+                // Si es .txt, intenta buscar líneas tipo: Pikachu, nivel 50, etc.
+                const lines = e.target.result.split('\n').map(l=>l.trim()).filter(Boolean);
+                if (!lines.length || lines.some(line => /[^\w\s,áéíóúÁÉÍÓÚñÑ-]/.test(line))) {
+                    throw new Error('Archivo no válido');
+                }
+                // Antes parseábamos nombres; ahora ignoramos nombres y dejamos equipo vacío (solo GIFs soportados desde UI)
+                data = { equipo: [] };
+            } catch {
+                mostrarMensajeFlotante("Archivo no válido o corrupto. Sube un archivo de texto plano o JSON.", 'bg-red-600');
+                return;
+            }
+        }
+        mostrarEquipoPokemon(data.equipo || []);
+    };
+    reader.onerror = function() {
+        mostrarMensajeFlotante("No se pudo leer el archivo. Sube un archivo de texto plano o JSON.", 'bg-red-600');
+    };
+    reader.readAsText(file);
+}
+
+function mostrarEquipoPokemon(equipo) {
+    const cuadro = document.getElementById('cuadroEquipo');
+    const cont = document.getElementById('equipoPokemon');
+    if (!equipo || !equipo.length) {
+        cuadro.classList.add('hidden');
+        mostrarMensajeFlotante("No se encontró equipo en la partida.", 'bg-red-600');
+        return;
+    }
+    cuadro.style.background = "radial-gradient(circle at 50% 40%, #a5b4fc 0%, #6366f1 100%)";
+    cuadro.style.boxShadow = "0 0 24px 4px #a5b4fc88, 0 2px 8px #6366f1";
+    cuadro.style.border = "4px solid #6366f1";
+    cuadro.style.maxWidth = "380px";
+    cuadro.style.margin = "0 auto";
+    cuadro.style.padding = "12px 0";
+    const equipo6 = equipo.slice(0, 6);
+    cont.innerHTML = `
+        <div class="flex justify-center gap-2">
+            ${equipo6.map(poke => `
+                <div class="flex flex-col items-center bg-white/90 rounded-lg p-1 shadow border border-indigo-200 w-16" style="backdrop-filter: blur(1px);">
+                    <img data-gifkey='${poke.gifKey||""}' src='' alt="Pokémon" class="w-16 h-16 object-contain mb-1 rounded border border-indigo-100 bg-white">
+                    <div class="font-bold text-[11px] text-indigo-700 text-center" style="height:14px"></div>
+                    ${poke.nivel ? `<div class="text-[10px] text-indigo-500">Nv:${poke.nivel}</div>` : ''}
+                    ${poke.naturaleza ? `<div class="text-[9px] text-pink-600 mt-1">Nat:<span class="font-semibold">${poke.naturaleza}</span></div>` : ''}
+                    ${poke.habilidades ? `<div class="text-[9px] text-blue-600 mt-1">Hab:<span class="font-semibold">${Array.isArray(poke.habilidades) ? poke.habilidades.join(', ') : poke.habilidades}</span></div>` : ''}
+                </div>
+            `).join('')}
+        </div>
+    `;
+    cuadro.classList.remove('hidden');
+    // Cargar blobs desde IndexedDB para cualquier img con data-gifkey en este contenedor
+    populateGifElements(cont);
+}
+
+function mostrarCargarEquipo() {
+    const modal = document.getElementById('modalCargarEquipo');
+    const modalContent = document.getElementById('modalCargarEquipoContent');
+    modal.classList.add('active');
+      
+      
+    setTimeout(() => {
+        modalContent.classList.remove('scale-95', 'opacity-0');
+        modalContent.classList.add('scale-100', 'opacity-100');
+    }, 10);
+    // Limpia el cuadro de equipo al abrir
+    document.getElementById('cuadroEquipo').classList.add('hidden');
+    document.getElementById('equipoPokemon').innerHTML = '';
+    document.getElementById('inputMainFile').value = '';
+}
+
+function verHistorialJugador() {
+    const usuario = document.getElementById("selectorHistorial").value;
+    const user = usuarios.find(u => u.usuario === usuario);
+    const cont = document.getElementById("historialJugadorContainer");
+    if (!user) {
+        cont.innerHTML = `<p class="text-center text-gray-500 mt-4">Selecciona un jugador válido.</p>`;
+        return;
+    }
+    let compras = user.historialCompras.map(h => `<li>${h.item} - ${h.fecha}</li>`).join('');
+    let usos = user.historialUsos.map(h => `<li>${h.item} - ${h.fecha}</li>`).join('');
+    cont.innerHTML = `
+        <div class="bg-white/80 p-4 rounded-xl shadow-md mb-4">
+            <h4 class="text-lg font-bold mb-2 text-orange-600">Compras</h4>
+            <ul class="list-disc list-inside text-gray-700">${compras || '<li>No hay compras.</li>'}</ul>
+        </div>
+        <div class="bg-white/80 p-4 rounded-xl shadow-md mb-4">
+            <h4 class="text-lg font-bold mb-2 text-orange-600">Usos de Ítems</h4>
+            <ul class="list-disc list-inside text-gray-700">${usos || '<li>No hay usos.</li>'}</ul>
+        </div>
+        ${usuarioActivo && usuarioActivo.esAdmin ? `
+        <button onclick="eliminarHistorialUsuario('${user.usuario}')" class="w-full bg-red-500 text-white font-bold py-2 rounded-xl hover:bg-red-600 transition-colors shadow-md border-2 border-red-700 mt-2">
+            <i class='fas fa-trash-alt mr-2'></i> Eliminar historial
+        </button>
+        ` : ''}
+    `;
+}
+
+function eliminarHistorialUsuario(usuario) {
+    const user = usuarios.find(u => u.usuario === usuario);
+    if (!user) return;
+    if (!confirm('¿Estás seguro de que deseas eliminar todo el historial de este usuario? Esta acción no se puede deshacer.')) return;
+    user.historialCompras = [];
+    user.historialUsos = [];
+    guardarDatos();
+    verHistorialJugador();
+}
+// === LÓGICA OTORGAR MEDALLA ===
+function abrirModalOtorgarMedalla() {
+    if (!(usuarioActivo && usuarioActivo.usuario === 'odin')) return;
+    const modal = document.getElementById('modalOtorgarMedalla');
+    const modalContent = document.getElementById('modalOtorgarMedallaContent');
+    // Llenar selector de usuarios (no admins)
+    const selector = document.getElementById('selectorUsuarioMedalla');
+    selector.innerHTML = usuarios.filter(u=>!u.esAdmin).map(u=>`<option value="${u.usuario}">${u.nombre} (${u.usuario})</option>`).join('');
+    document.getElementById('inputImagenMedalla').value = '';
+    document.getElementById('previewMedallaContainer').classList.add('hidden');
+    modal.classList.add('active');
+    setTimeout(()=>{
+        modalContent.classList.remove('scale-95','opacity-0');
+        modalContent.classList.add('scale-100','opacity-100');
+    },10);
+    actualizarPanelEliminarMedallas();
+    selector.onchange = actualizarPanelEliminarMedallas;
+}
+
+function actualizarPanelEliminarMedallas() {
+    const usuarioSel = document.getElementById('selectorUsuarioMedalla').value;
+    const user = usuarios.find(u=>u.usuario===usuarioSel);
+    const cont = document.getElementById('listaMedallasUsuario');
+    if (!user || !user.medallas || !user.medallas.length) {
+        cont.innerHTML = '<span class="text-gray-400 text-sm">Sin medallas</span>';
+        return;
+    }
+    cont.innerHTML = user.medallas.map((m,i)=>`
+        <div class='flex flex-col items-center'>
+            <img src='${m}' class='w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-yellow-400 shadow-lg bg-white mb-1'>
+            <button onclick="eliminarMedallaUsuario('${user.usuario}',${i})" class='text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-700'>Eliminar</button>
+        </div>
+    `).join('');
+}
+
+function eliminarMedallaUsuario(usuario, idx) {
+    if (!confirm('¿Seguro que quieres eliminar esta medalla?')) return;
+    const user = usuarios.find(u=>u.usuario===usuario);
+    if (!user || !user.medallas) return;
+    user.medallas.splice(idx,1);
+    guardarDatos();
+    actualizarPanelEliminarMedallas();
+    mostrarMensajeFlotante('Medalla eliminada','bg-red-600');
+}
+
+document.getElementById('inputImagenMedalla').addEventListener('change', function() {
+    const file = this.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('previewMedallaImg').src = e.target.result;
+            document.getElementById('previewMedallaContainer').classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    } else {
+        document.getElementById('previewMedallaContainer').classList.add('hidden');
+    }
+});
+
+document.getElementById('formOtorgarMedalla').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const usuarioSel = document.getElementById('selectorUsuarioMedalla').value;
+    const file = document.getElementById('inputImagenMedalla').files[0];
+    if (!usuarioSel || !file) {
+        mostrarMensajeFlotante('Selecciona usuario y una imagen.','bg-red-600');
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+        const imgData = ev.target.result;
+        const user = usuarios.find(u=>u.usuario===usuarioSel);
+        if (!user) return;
+        if (!user.medallas) user.medallas = [];
+        user.medallas.push(imgData);
+        guardarDatos();
+        mostrarMensajeFlotante('¡Medalla otorgada!','bg-yellow-600');
+        cerrarModal('modalOtorgarMedalla');
+    };
+    reader.readAsDataURL(file);
+});
+
+// Mostrar botón solo si es odin
+function mostrarBotonOtorgarMedalla() {
+    const btn = document.getElementById('btnOtorgarMedalla');
+    if (usuarioActivo && usuarioActivo.usuario === 'odin') {
+        btn.classList.remove('hidden');
+    } else {
+        btn.classList.add('hidden');
+    }
+}
+
+// Mostrar botón admin usuarios solo si es odin
+function mostrarBotonAdminUsuarios() {
+        // Insertar botón si no existe
+        const existing = document.getElementById('btnAdminUsuarios');
+        if (!existing) {
+                const nav = document.querySelector('#perfil nav');
+                if (nav) {
+                        const btn = document.createElement('button');
+                        btn.id = 'btnAdminUsuarios';
+                        btn.className = 'flex items-center justify-center px-4 py-3 bg-red-600 text-white rounded-xl hover:scale-105 transition-all shadow-lg border-2 border-red-700 font-semibold';
+                        btn.innerHTML = `<i class='fas fa-user-shield mr-2'></i> Admin Usuarios`;
+                        btn.onclick = () => abrirAdminUsuarios();
+                        nav.insertBefore(btn, nav.firstChild);
+                }
+        }
+        const btn = document.getElementById('btnAdminUsuarios');
+        if (!btn) return;
+        if (usuarioActivo && usuarioActivo.usuario === 'odin') {
+            btn.classList.remove('hidden');
+            btn.style.display = 'inline-flex';
+            btn.style.alignItems = 'center';
+        } else {
+            btn.classList.add('hidden');
+            btn.style.display = 'none';
+        }
+}
+
+// Modal para administrar usuarios (solo Odin)
+/* Modal markup */
+const adminUsuariosModalMarkup = `
+<div id="modalAdminUsuarios" class="modal-overlay">
+    <div class="bg-white rounded-2xl shadow-xl w-11/12 max-w-3xl p-6 md:p-8 relative transform transition-transform duration-300 scale-95 opacity-0" id="modalAdminUsuariosContent">
+        <button onclick="cerrarModal('modalAdminUsuarios')" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900 text-2xl font-bold">&times;</button>
+        <h3 class="text-2xl font-bold text-red-600 mb-4 text-center">Administrar Usuarios</h3>
+        <div class="grid grid-cols-1 gap-4">
+            <div id="adminUsuariosList" class="max-h-64 overflow-auto"></div>
+            <div class="p-3 border rounded bg-white">
+                <h4 class="font-bold mb-2">Agregar Usuario</h4>
+                <div class="flex gap-2">
+                    <input id="nuevoUsuarioNombre" placeholder="Usuario" class="w-1/3 p-2 border rounded" />
+                    <input id="nuevoUsuarioPassword" placeholder="Contraseña" class="w-1/3 p-2 border rounded" />
+                    <input id="nuevoUsuarioDisplay" placeholder="Nombre" class="w-1/3 p-2 border rounded" />
+                </div>
+                <div class="mt-2 flex gap-2">
+                    <button id="btnAgregarUsuarioAdmin" class="bg-green-500 text-white px-4 py-2 rounded">Agregar</button>
+                    <button id="btnCerrarAdminUsuarios" class="bg-gray-300 text-gray-800 px-4 py-2 rounded" onclick="cerrarModal('modalAdminUsuarios')">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>`;
+// Append markup to body (safe to call multiple times)
+if (!document.getElementById('modalAdminUsuarios')) document.body.insertAdjacentHTML('beforeend', adminUsuariosModalMarkup);
+
+function abrirAdminUsuarios() {
+        if (!(usuarioActivo && usuarioActivo.usuario === 'odin')) return;
+        renderAdminUsuarios();
+        const modal = document.getElementById('modalAdminUsuarios');
+        const modalContent = document.getElementById('modalAdminUsuariosContent');
+        bringModalToFront(modal);
+        modal.classList.add('active');
+        setTimeout(() => { modalContent.classList.remove('scale-95','opacity-0'); modalContent.classList.add('scale-100','opacity-100'); }, 10);
+        // bind add button
+        const addBtn = document.getElementById('btnAgregarUsuarioAdmin');
+        if (addBtn) {
+                addBtn.onclick = () => {
+                        const u = document.getElementById('nuevoUsuarioNombre').value.trim();
+                        const p = document.getElementById('nuevoUsuarioPassword').value.trim();
+                        const n = document.getElementById('nuevoUsuarioDisplay').value.trim() || u;
+                        if (!u || !p) { mostrarMensajeFlotante('Usuario y contraseña son obligatorios','bg-red-600'); return; }
+                        if (usuarios.find(x=>x.usuario===u)) { mostrarMensajeFlotante('Usuario ya existe','bg-red-600'); return; }
+                        const newUser = { usuario: u, password: p, nombre: n, saldo: 0, monedasRuleta:0, inventario: [], historialCompras: [], historialUsos: [], esAdmin: false };
+                        usuarios.push(newUser);
+                        guardarDatos();
+                        renderAdminUsuarios();
+                        mostrarMensajeFlotante('Usuario agregado','bg-green-600');
+                        document.getElementById('nuevoUsuarioNombre').value=''; document.getElementById('nuevoUsuarioPassword').value=''; document.getElementById('nuevoUsuarioDisplay').value='';
+                };
+        }
+}
+
+function renderAdminUsuarios() {
+        const cont = document.getElementById('adminUsuariosList');
+        cont.innerHTML = '';
+        usuarios.forEach(u => {
+            const row = document.createElement('div');
+            row.className = 'flex items-center justify-between p-2 bg-white/80 rounded border mb-2';
+            const left = document.createElement('div'); left.className = 'flex items-center gap-3';
+            const img = document.createElement('img'); img.src = u.fotoPerfil||''; img.className = 'w-10 h-10 object-cover rounded-full border'; img.onerror = function(){ this.src='https://placehold.co/40x40/eee/aaa?text=?'; };
+            const txt = document.createElement('div'); const title = document.createElement('div'); title.className='font-bold'; title.textContent = `${u.nombre||u.usuario} ${u.usuario==='odin' ? '(Odin)' : ''}`;
+            const sub = document.createElement('div'); sub.className='text-xs text-gray-600'; sub.textContent = u.usuario;
+            txt.appendChild(title); txt.appendChild(sub);
+            left.appendChild(img); left.appendChild(txt);
+
+            const actions = document.createElement('div'); actions.className='flex gap-2 items-center';
+            const btnVer = document.createElement('button'); btnVer.className='px-3 py-1 bg-indigo-500 text-white rounded text-sm'; btnVer.textContent='Ver'; btnVer.addEventListener('click', ()=>abrirResumenDeUsuario(u.usuario));
+            const btnToggle = document.createElement('button'); btnToggle.className='px-3 py-1 text-white rounded text-sm'; btnToggle.textContent = u.esAdmin ? 'Quitar admin' : 'Hacer admin';
+            btnToggle.style.backgroundColor = u.esAdmin ? '#f59e0b' : '#9ca3af';
+            const btnEliminar = document.createElement('button'); btnEliminar.className='px-3 py-1 bg-red-500 text-white rounded text-sm'; btnEliminar.textContent='Eliminar';
+
+            // Only Odin can toggle admin or delete users
+            if (usuarioActivo && usuarioActivo.usuario === 'odin') {
+                btnToggle.addEventListener('click', ()=>{ if (confirm(`¿Cambiar rol de admin para ${u.usuario}?`)) toggleAdmin(u.usuario); });
+                btnEliminar.addEventListener('click', ()=> eliminarUsuario(u.usuario));
+            } else {
+                // disable actions for non-odin
+                btnToggle.disabled = true; btnToggle.title = 'Solo Odin puede cambiar roles'; btnEliminar.disabled = true; btnEliminar.title = 'Solo Odin puede eliminar usuarios';
+            }
+            actions.appendChild(btnVer); actions.appendChild(btnToggle); actions.appendChild(btnEliminar);
+            row.appendChild(left); row.appendChild(actions);
+            cont.appendChild(row);
+        });
+}
+
+function eliminarUsuario(username) {
+        if (!confirm(`¿Eliminar al usuario ${username}? Esta acción no se puede deshacer.`)) return;
+        const idx = usuarios.findIndex(u=>u.usuario===username);
+        if (idx===-1) { mostrarMensajeFlotante('Usuario no encontrado','bg-red-600'); return; }
+        // Evitar eliminar a Odin
+        if (usuarios[idx].usuario === 'odin') { mostrarMensajeFlotante('No puedes eliminar a Odin','bg-red-600'); return; }
+        usuarios.splice(idx,1);
+        guardarDatos();
+        renderAdminUsuarios();
+        mostrarMensajeFlotante('Usuario eliminado','bg-yellow-600');
+}
+
+function toggleAdmin(username) {
+        const u = usuarios.find(x=>x.usuario===username);
+        if (!u) { mostrarMensajeFlotante('Usuario no encontrado','bg-red-600'); return; }
+        // No permitir quitar admin a Odin
+        if (u.usuario === 'odin') { mostrarMensajeFlotante('No puedes modificar a Odin','bg-red-600'); return; }
+        u.esAdmin = !u.esAdmin;
+        guardarDatos();
+        renderAdminUsuarios();
+        mostrarMensajeFlotante(u.esAdmin ? 'Ahora es admin' : 'Se quitó admin', 'bg-green-600');
+}
+
+// Mostrar medallas en el perfil del usuario (en tu función de render de perfil, agrega esto donde corresponda)
+function renderMedallasUsuario(user, contenedorId) {
+    const cont = document.getElementById(contenedorId);
+    if (!user.medallas || !user.medallas.length) {
+        cont.innerHTML = '';
+        return;
+    }
+    // Mostrar las medallas horizontalmente (una al lado de la otra), con tamaño pequeño
+    cont.innerHTML = `
+        <div class='flex flex-row gap-0 items-center mt-2 overflow-x-auto py-1'>
+            ${user.medallas.map(m=>`
+                <div class="flex items-center justify-center">
+                    <img src='${m}' class='w-8 h-8 md:w-10 md:h-10 rounded-full border border-yellow-400 shadow-sm bg-white' title='Medalla'>
+                </div>
+            `).join('')}
+        </div>
+        <div class='text-left text-yellow-700 font-bold mt-2' style='font-size:0.95rem;'>Medallas obtenidas</div>
+    `;
+}
+
+// Llama mostrarBotonOtorgarMedalla() después del login y cuando cambie usuarioActivo
+// Llama renderMedallasUsuario(usuarioActivo, 'idDelContenedorMedallas') donde quieras mostrar las medallas del usuario
+
+// ==================== EVENTO FOTO PERFIL ====================
+document.getElementById('inputFotoPerfil').addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        if (!usuarioActivo) return;
+        usuarioActivo.fotoPerfil = e.target.result;
+        localStorage.setItem('usuarios', JSON.stringify(usuarios));
+        document.getElementById('fotoPerfilImg').src = usuarioActivo.fotoPerfil;
+        document.getElementById('fotoPerfilImg').classList.remove('hidden');
+        document.getElementById('iconoPerfilDefault').classList.add('hidden');
+    };
+    reader.readAsDataURL(file);
+});
+
+</script>
+<div id="cartaGanadoraRuleta" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:9999; background:rgba(0,0,0,0.65); align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:2rem; box-shadow:0 8px 48px #fbbf24cc, 0 2px 8px #0002; padding:2.5rem 2rem; display:flex; flex-direction:column; align-items:center; gap:1.2rem; min-width:260px; max-width:90vw; animation:popscale 0.7s;">
+        <div id="cartaGanadoraImgContainer" style="width:120px; height:120px; background:linear-gradient(135deg,#fde68a,#fbbf24,#f472b6,#60a5fa); border-radius:1.5rem; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 24px #fbbf24aa;">
+            <img id="cartaGanadoraImg" src="" alt="Premio Ruleta" style="width:100px; height:100px; object-fit:contain; border-radius:1rem; background:white;">
+        </div>
+        <h2 id="cartaGanadoraNombre" style="font-size:2rem; font-weight:900; color:#be185d; text-align:center; text-shadow:0 2px 12px #f472b655;">¡Ganaste!</h2>
+        <button onclick="document.getElementById('cartaGanadoraRuleta').style.display='none'" style="margin-top:1.2rem; background:#fbbf24; color:#fff; font-weight:bold; font-size:1.1rem; border:none; border-radius:1rem; padding:0.7rem 2.2rem; box-shadow:0 2px 12px #fbbf24aa; cursor:pointer;">Cerrar</button>
+    </div>
+</div>
+<script>
+function mostrarCartaGanadoraRuleta(ganador) {
+    var carta = document.getElementById('cartaGanadoraRuleta');
+    var img = document.getElementById('cartaGanadoraImg');
+    var nombre = document.getElementById('cartaGanadoraNombre');
+    img.src = ganador.imagen;
+    nombre.innerHTML = `¡Ganaste: <span style='color:#f59e42;'>${ganador.nombre}</span>!`;
+    carta.style.display = 'flex';
+    // Habilitar el botón de la ruleta por si quedó bloqueado
+    if (document.getElementById('girarRuletaBtn')) {
+        document.getElementById('girarRuletaBtn').disabled = false;
+    }
+    ruletaGirando = false;
+    setTimeout(()=>{ carta.scrollIntoView({behavior:'smooth',block:'center'}); }, 100);
+}
+
+// ==================== EVENTO FOTO PERFIL ====================
+document.getElementById('inputFotoPerfil').addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        if (!usuarioActivo) return;
+        usuarioActivo.fotoPerfil = e.target.result;
+        localStorage.setItem('usuarios', JSON.stringify(usuarios));
+        document.getElementById('fotoPerfilImg').src = usuarioActivo.fotoPerfil;
+        document.getElementById('fotoPerfilImg').classList.remove('hidden');
+        document.getElementById('iconoPerfilDefault').classList.add('hidden');
+    };
+    reader.readAsDataURL(file);
+});
+
+</script>
+</body>
+</html>

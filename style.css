@@ -1,0 +1,50 @@
+/* Animación para el mensaje de premio ganado */
+.premio-ganado-anim {
+  animation: premioZoom 1s cubic-bezier(0.23, 1.12, 0.32, 1) 1;
+  color: #FFD700 !important;
+  text-shadow: 0 0 10px #FFD700, 0 0 20px #FF9800;
+}
+
+@keyframes premioZoom {
+  0% {
+    transform: scale(0.5) rotate(-10deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.2) rotate(5deg);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(0.95) rotate(-2deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+body {
+  font-family: Arial, sans-serif;
+  background: #f3f3f3;
+  text-align: center;
+  padding: 20px;
+}
+
+canvas {
+  margin-top: 20px;
+}
+
+.hidden {
+  display: none;
+}
+
+form {
+  margin: 20px auto;
+  display: flex;
+  flex-direction: column;
+  width: 200px;
+}
+
+form input, form button {
+  margin: 5px 0;
+  padding: 10px;
+}
