@@ -940,12 +940,7 @@ document.getElementById('inputFotoPerfil').addEventListener('change', function()
 
 <script>
     // ==================== DATOS INICIALES ====================
-    let usuarios = JSON.parse(localStorage.getItem("usuarios")) || [
-        { usuario: "odin", password: "admin", nombre: "Odin", saldo: 9999, monedasRuleta: 10, inventario: [], historialCompras: [], historialUsos: [], esAdmin: true },
-        { usuario: "athena", password: "admin", nombre: "Athena", saldo: 8000, monedasRuleta: 10, inventario: [], historialCompras: [], historialUsos: [], esAdmin: true },
-        { usuario: "hugo", password: "123", nombre: "Hugo", saldo: 500, monedasRuleta: 2, inventario: [], historialCompras: [], historialUsos: [], esAdmin: false },
-        { usuario: "ivan", password: "456", nombre: "Ivan", saldo: 200, monedasRuleta: 1, inventario: [], historialCompras: [], historialUsos: [], esAdmin: false }
-    ];
+    // usuarios is initialized in script.js
     let productos = JSON.parse(localStorage.getItem("productos")) || [
         { id: 'item1', nombre: 'Poción', descripcion: 'Restaura 20 PS.', precio: 50, imagen: 'https://placehold.co/150x200/FF5733/FFFFFF?text=Poción', categoria: 'Revivir y protecciones' },
         { id: 'item2', nombre: 'Superpoción', descripcion: 'Restaura 50 PS.', precio: 40, imagen: 'https://placehold.co/150x200/3498DB/ffffff?text=Superpoción', categoria: 'Revivir y protecciones' },
