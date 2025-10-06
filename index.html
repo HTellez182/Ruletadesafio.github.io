@@ -4,24 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aventura de Bolsillo: Alola</title>
-    <script src="https://cdn.tailwindcss.com">
-// ==================== EVENTO FOTO PERFIL ====================
-document.getElementById('inputFotoPerfil').addEventListener('change', function() {
-    const file = this.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        if (!usuarioActivo) return;
-        usuarioActivo.fotoPerfil = e.target.result;
-        localStorage.setItem('usuarios', JSON.stringify(usuarios));
-        document.getElementById('fotoPerfilImg').src = usuarioActivo.fotoPerfil;
-        document.getElementById('fotoPerfilImg').classList.remove('hidden');
-        document.getElementById('iconoPerfilDefault').classList.add('hidden');
-    };
-    reader.readAsDataURL(file);
-});
-
-</script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
